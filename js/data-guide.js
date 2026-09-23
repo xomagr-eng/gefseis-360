@@ -44,7 +44,7 @@ window.COMBOS = {
  ],
  vr:[
   {t:'Ουζερί',x:'Ούζο με χταπόδι σχάρας, μαρίδα, φάβα, τζατζίκι.',ids:['ouzo','xtapodisxaras','marida','fava','tzatziki']},
-  {t:'Τσιπουράδικο (Βόλος)',x:'Τσίπουρο με γαύρο, μπουγιουρντί, μπεκρή μεζέ, τυροκαυτερή.',ids:['tsipouro','gavrostiganitos','mpougiourdi','mpekrimeze','tyrokafteri']},
+  {t:'Τσιπουράδικο (Βόλος)',x:'Τσίπουρο με γλυκάνισο και ένα μεζέ σε κάθε καραφάκι: γαύρος, μπουγιουρντί, μπεκρή μεζέ, τυροκαυτερή.',ids:['tsipouromeze','tsipourotyrnavou','gavrostiganitos','mpougiourdi','mpekrimeze','tyrokafteri']},
   {t:'Ψητά με φίλους',x:'Μοσχαρίσια μπριζόλα, παϊδάκια, πατάτες, χωριάτικη, Αγιωργίτικο.',ids:['mprizolamoschari','paidakia','patatestiganites','salataxoriatiki','agiorgitiko']},
   {t:'Θαλασσινό δείπνο',x:'Γαριδομακαρονάδα, μύδια αχνιστά, Ασύρτικο.',ids:['garidomakaronada','mydia','asyrtiko']},
   {t:'Ρομαντικό',x:'Φιλέτο με σάλτσα πιπεριού, πουρές, Merlot, σουφλέ σοκολάτας.',ids:['fileto','poures','merlot','soufle']},
