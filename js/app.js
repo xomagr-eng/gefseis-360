@@ -57,6 +57,7 @@
     ${c ? `<div class="combo"><b>${esc(c.t)}</b><p>${esc(c.x)}</p><div class="links">${c.ids.map(lnk).join('')}</div></div>` : ''}
     <div class="sect"><h2>Κατηγορίες</h2></div>
     <div class="tiles">${Object.keys(CATS).map(k => { const n = DB.filter(x => x.cat === k).length; return `<a class="tile" href="#/c/${k}"><span class="n">${n}</span><span class="em">${CATS[k].emoji}</span><b>${CATS[k].name}</b></a>`; }).join('')}
+      <a class="tile" href="#/giortes"><span class="em">🎉</span><b>Γιορτές & έθιμα: τι τρώμε</b></a>
       <a class="tile" href="#/kouzines"><span class="em">🗺️</span><b>Παραδοσιακή κουζίνα: περιοχές & χώρες</b></a>
       <a class="tile" href="#/guide"><span class="em">📘</span><b>Οδηγός: κοπές, ψήσιμο, ταιριάσματα</b></a>
       <a class="tile" href="#/fridge"><span class="em">🧊</span><b>Τι φτιάχνω με ό,τι έχω</b></a></div>
@@ -207,6 +208,18 @@
       <div class="grid" id="kgrid">${list.map(r => `<div class="box kreg" data-q="${esc(norm(r.n + ' ' + (r.d || '') + ' ' + (r.c || '')))}" style="margin:0"><h3><span class="l">${r.e} ${esc(r.n)}</span>${r.c ? `<span class="chip gold">${esc(r.c)}</span>` : ''}</h3>${r.d ? `<p class="mut small" style="margin:0 0 8px">${esc(r.d)}</p>` : ''}<ul class="plain">${r.k.map(dish).join('')}</ul></div>`).join('')}</div>`;
   }
 
+  function giortes(sel) {
+    const H = window.HOLIDAYS || [];
+    const sec = (t, ids) => { const l = ids.filter(i => BY[i]); return l.length ? `<div style="margin-top:10px"><b class="small" style="color:var(--gold)">${t}</b><div class="links" style="margin-top:6px">${l.map(lnk).join('')}</div></div>` : ''; };
+    const list = sel ? H.filter(h => h.id === sel) : H;
+    return `<h1>🎉 Γιορτές & έθιμα – τι τρώμε</h1><p class="mut">Τα παραδοσιακά φαγητά, γλυκά και ποτά κάθε γιορτής, με τα έθιμα. Πάτα σε οποιοδήποτε για τη συνταγή.</p>
+      <div class="chips"><a class="fbtn ${!sel ? 'on' : ''}" href="#/giortes">Όλες</a>${H.map(h => `<a class="fbtn ${sel === h.id ? 'on' : ''}" href="#/giortes/${h.id}">${h.e} ${esc(h.n)}</a>`).join('')}</div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">${list.map(h => `<div class="box acc" style="margin:0"><h3><span class="l">${h.e} ${esc(h.n)}</span><span class="chip gold">${esc(h.w)}</span></h3>
+        <p class="mut small" style="margin:0">${esc(h.d)}</p>
+        ${sec('🍽️ Φαγητά', h.f)}${sec('🍰 Γλυκά', h.s)}${sec('🥂 Ποτά & ροφήματα', h.dr)}
+        ${h.c && h.c.length ? `<div style="margin-top:10px"><b class="small" style="color:var(--gold)">📜 Έθιμα</b><ul class="plain small">${h.c.map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>` : ''}</div>`).join('')}</div>`;
+  }
+
   function favs() {
     const it = S.fav.map(i => BY[i]).filter(Boolean);
     return `<h1>❤️ Αγαπημένα</h1>${it.length ? `<div class="grid">${it.map(x => card(x)).join('')}</div>` : '<div class="empty"><div class="e">🤍</div>Πάτα «Αγαπημένο» σε μια συνταγή για να τη βρίσκεις εδώ.</div>'}`;
@@ -355,6 +368,7 @@
       case 'meals': html = meals(p[1]); nav = 'meals'; break;
       case 'guide': html = guide(); nav = ''; break;
       case 'kouzines': html = kouzines(p[1], p[2]); nav = ''; break;
+      case 'giortes': html = giortes(p[1]); nav = ''; break;
       case 'fav': html = favs(); nav = ''; break;
       case 'list': html = list(); nav = ''; break;
       case 'fridge': html = fridge(); nav = ''; break;
