@@ -199,7 +199,7 @@
     tab = tab === 'kosmos' ? 'kosmos' : 'ellada';
     const conts = [...new Set(COUNTRIES.map(c => c.c))];
     const list = tab === 'ellada' ? REGIONS : COUNTRIES.filter(c => !cont || c.c === cont);
-    const dish = k => { const x = k[2] && BY[k[2]]; return `<li class="kdish" data-q="${esc(norm(k[0] + ' ' + (k[1] || '')))}">${x ? `<a href="#/r/${x.id}">${x.emoji} <b>${esc(k[0])}</b></a>` : `<b>${esc(k[0])}</b>`}${k[1] ? ` <span class="mut small">– ${esc(k[1])}</span>` : ''}${x ? ' <span class="chip red" style="font-size:10px">συνταγή</span>' : ''} <button class="pbtn" data-ph="${esc(k[0])}" title="Φωτογραφία">📷</button></li>`; };
+    const dish = k => { const x = k[2] && BY[k[2]]; return `<li class="kdish" data-q="${esc(norm(k[0] + ' ' + (k[1] || '')))}">${x ? `<a href="#/r/${x.id}">${x.emoji} <b>${esc(k[0])}</b></a>` : `<b>${esc(k[0])}</b>`}${k[1] ? ` <span class="mut small">– ${esc(k[1])}</span>` : ''}${x ? ' <span class="chip red" style="font-size:10px">συνταγή</span>' : ''} <button class="pbtn" data-ph="${esc(k[0])}" data-wp="${esc((window.KWP || {})[k[0]] || (k[2] && (window.WP || {})[k[2]]) || '')}" title="Φωτογραφία">📷</button></li>`; };
     return `<h1>🗺️ Παραδοσιακή κουζίνα</h1><p class="mut">Τα χαρακτηριστικά φαγητά και ποτά κάθε περιοχής της Ελλάδας και κάθε χώρας. Όσα έχουν <span class="chip red" style="font-size:10px">συνταγή</span> ανοίγουν με ένα κλικ.</p>
       <div class="chips"><a class="fbtn ${tab === 'ellada' ? 'on' : ''}" href="#/kouzines/ellada">🇬🇷 Ελλάδα (${REGIONS.length} περιοχές)</a><a class="fbtn ${tab === 'kosmos' ? 'on' : ''}" href="#/kouzines/kosmos">🌐 Κόσμος (${COUNTRIES.length} χώρες)</a></div>
       ${tab === 'kosmos' ? `<div class="chips"><a class="fbtn ${!cont ? 'on' : ''}" href="#/kouzines/kosmos">Όλες</a>${conts.map(c => `<a class="fbtn ${cont === c ? 'on' : ''}" href="#/kouzines/kosmos/${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div>` : ''}
@@ -293,7 +293,7 @@
     if (PH[q] !== undefined) return PH[q];
     let r = null, err = false;
     if (alt === '-') return (PH[q] = null);
-    if (alt) { try { r = await wikiTitle('en', alt); } catch (e) { err = true; } }
+    if (alt) { const m = /^el:(.+)$/.exec(alt); try { r = m ? await wikiTitle('el', m[1]) : await wikiTitle('en', alt); } catch (e) { err = true; } }
     if (!r) for (const lang of ['el', 'en']) { try { r = await wikiSearch(lang, q); } catch (e) { err = true; } if (r) break; }
     if (!r && err) return { error: true };            // προσωρινό πρόβλημα δικτύου/ορίου – δεν αποθηκεύεται
     if (r) { try { r.meta = await fileMeta(r); } catch (e) { r.meta = { artist: '', license: '', src: r.page }; } }
@@ -368,7 +368,7 @@
     if (p[0] === 'meals') { const b = $('#plan'); b.onclick = () => { $('#planOut').innerHTML = planDay(); }; }
     if (p[0] === 'fridge') { $('#frGo').onclick = runFridge; $('#frIn').onkeydown = e => { if (e.key === 'Enter') runFridge(); };
       app.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const i = $('#frIn'); i.value = (i.value.trim() ? i.value.replace(/[,\s]*$/, '') + ', ' : '') + b.dataset.add; runFridge(); }); if ($('#frIn').value) runFridge(); }
-    if (p[0] === 'kouzines') app.querySelectorAll('[data-ph]').forEach(b => b.onclick = () => photoModal(b.dataset.ph));
+    if (p[0] === 'kouzines') app.querySelectorAll('[data-ph]').forEach(b => b.onclick = () => photoModal(b.dataset.ph, b.dataset.wp || undefined));
     if (p[0] === 'kouzines') $('#kq').oninput = e => { const t = norm(e.target.value.trim());
       app.querySelectorAll('.kreg').forEach(b => { const hitReg = !t || b.dataset.q.includes(t); let any = false;
         b.querySelectorAll('.kdish').forEach(li => { const h = hitReg || li.dataset.q.includes(t); li.style.display = h ? '' : 'none'; any = any || h; });
