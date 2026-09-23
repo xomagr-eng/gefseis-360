@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ΓΕΥΣΕΙΣ 360°</title>
+<meta name="description" content="Καφές, ροφήματα, φαγητά ταβέρνας & ουζερί, γλυκά, κρασιά, μπύρες, κοκτέιλ – υλικά, τρόπος παρασκευής, σερβίρισμα και προτάσεις για κάθε ώρα της ημέρας.">
+<meta name="theme-color" content="#0d0d10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#/"><span class="ic">🍷</span><span class="t">ΓΕΥΣΕΙΣ <b>360°</b></span></a>
+    <label class="search"><input id="q" type="search" placeholder="Αναζήτηση: μπριζόλα, freddo, μουσακάς, Negroni…" autocomplete="off"></label>
+    <a class="hbtn opt" href="#/fridge" title="Τι έχω στο ψυγείο">🧊</a>
+    <a class="hbtn opt" href="#/kouzines" title="Παραδοσιακή κουζίνα">🗺️</a>
+    <a class="hbtn opt" href="#/guide" title="Οδηγός">📘</a>
+    <a class="hbtn" href="#/fav" title="Αγαπημένα">❤️<span class="badge" id="favN" hidden></span></a>
+    <a class="hbtn" href="#/list" title="Λίστα αγορών">🛒<span class="badge" id="listN" hidden></span></a>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+<nav class="bnav" id="bnav">
+  <a href="#/" data-k="home"><span class="e">🏠</span>Αρχική</a>
+  <a href="#/g/rofimata" data-k="rofimata"><span class="e">☕</span>Καφές</a>
+  <a href="#/g/fagito" data-k="fagito"><span class="e">🍽️</span>Φαγητό</a>
+  <a href="#/g/glyka" data-k="glyka"><span class="e">🍰</span>Γλυκά</a>
+  <a href="#/g/pota" data-k="pota"><span class="e">🍷</span>Ποτά</a>
+  <a href="#/meals" data-k="meals"><span class="e">🕐</span>Ημέρα</a>
+</nav>
+<div class="timer" id="timer"><span>⏱️</span><span class="tt" id="tt">00:00</span><button class="btn sm ghost" id="tPause">⏸</button><button class="btn sm" id="tStop">✕</button></div>
+<div class="toast" id="toast"></div>
+
+<script src="js/core.js"></script>
+<script src="js/data-kafes.js"></script>
+<script src="js/data-psita.js"></script>
+<script src="js/data-mageirefta.js"></script>
+<script src="js/data-thalassa-meze.js"></script>
+<script src="js/data-salates-synod-proino.js"></script>
+<script src="js/data-glyka.js"></script>
+<script src="js/data-pota.js"></script>
+<script src="js/data-extra.js"></script>
+<script src="js/data-souvlaki.js"></script>
+<script src="js/data-extra2.js"></script>
+<script src="js/data-extra3.js"></script>
+<script src="js/data-kynigi.js"></script>
+<script src="js/data-extra4.js"></script>
+<script src="js/data-kouzines.js"></script>
+<script src="js/data-guide.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
