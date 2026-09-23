@@ -11,7 +11,7 @@ window.R = function (cat, sub, id, name, emoji, o) {
 
 window.GROUPS = [
   { id: 'rofimata', name: 'Καφές & Ροφήματα', emoji: '☕', cats: ['kafes', 'rofimata'] },
-  { id: 'fagito', name: 'Φαγητό', emoji: '🍽️', cats: ['proino', 'souvlatzidiko', 'fastfood', 'psita', 'kynigi', 'mageirefta', 'thalassina', 'mezedes', 'salates', 'synodeftika'] },
+  { id: 'fagito', name: 'Φαγητό', emoji: '🍽️', cats: ['proino', 'pites', 'souvlatzidiko', 'fastfood', 'psita', 'kynigi', 'mageirefta', 'thalassina', 'mezedes', 'salates', 'synodeftika'] },
   { id: 'glyka', name: 'Γλυκά', emoji: '🍰', cats: ['glyka'] },
   { id: 'pota', name: 'Ποτά', emoji: '🍷', cats: ['krasia', 'mpyres', 'cocktails', 'apostagmata'] }
 ];
@@ -23,6 +23,8 @@ window.CATS = {
     subs: { tsai: 'Τσάγια', votana: 'Βότανα & αφεψήματα', sokolata: 'Σοκολάτες', alla: 'Ζεστά ροφήματα', xymoi: 'Χυμοί, λεμονάδες & smoothies' } },
   proino: { name: 'Πρωινό & Σνακ', emoji: '🍳', desc: 'Αυγά, πίτες, κουλούρι, γιαούρτι, τηγανίτες, τοστ και ελαφριά σνακ.',
     subs: { avga: 'Αυγά', pites: 'Πίτες & αρτοσκευάσματα', elafria: 'Ελαφριά & υγιεινά', kosmos: 'Πρωινά του κόσμου', snack: 'Σνακ & κολατσιό' } },
+  pites: { name: 'Πίτες', emoji: '🥧', desc: 'Αλμυρές και γλυκές πίτες όλης της Ελλάδας: με φύλλο, χωριάτικες, πιτάκια, τοπικές πίτες Ηπείρου, Κρήτης, νησιών.',
+    subs: { almyres: 'Αλμυρές πίτες', xoriatikes: 'Χωριάτικες & τοπικές', pitakia: 'Πιτάκια & μπουρεκάκια', glykes: 'Γλυκές πίτες' } },
   souvlatzidiko: { name: 'Σουβλατζίδικο & Τυλιχτά', emoji: '🥙', desc: 'Πιτόγυρα, τυλιχτά καλαμάκια, κεμπάπ, μερίδες, κυπριακή σεφταλιά, ντονέρ, σάλτσες και γαρνιτούρες του σουβλατζίδικου.',
     subs: { tylixta: 'Τυλιχτά σε πίτα', gyros: 'Γύρος', merides: 'Μερίδες & πιατέλες', kosmos: 'Street food του κόσμου', saltses: 'Σάλτσες & γαρνιτούρες' } },
   fastfood: { name: 'Fast Food', emoji: '🍔', desc: 'Burgers, πίτσες, τηγανητό κοτόπουλο, σάντουιτς, ασιατικά, nachos και σνακ – σπιτικές εκδοχές.',
