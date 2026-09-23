@@ -129,6 +129,7 @@
     return `<div class="crumbs"><a href="#/">Αρχική</a> › <a href="#/g/${g.id}">${g.name}</a> › <a href="#/c/${x.cat}">${c.name}</a> › <a href="#/c/${x.cat}/${x.sub}">${esc(c.subs[x.sub] || '')}</a></div>
     <div class="rhead"><span class="big">${x.emoji}</span><div style="flex:1;min-width:0"><h1>${esc(x.name)}</h1><p>${esc(x.d || '')}</p><div class="meta">${chips}</div>
       <div class="row noprint" style="margin-top:12px"><button class="btn sm ${isFav ? '' : 'ghost'}" id="fav">${isFav ? '❤️ Στα αγαπημένα' : '🤍 Αγαπημένο'}</button><button class="btn sm ghost" id="print">🖨️ Εκτύπωση</button><button class="btn sm ghost" id="copy">📋 Αντιγραφή</button>${(dk.i.length || dk.p.length) ? '<button class="btn sm ghost" id="reset">↺ Μηδενισμός</button>' : ''}</div></div></div>
+    <div class="box noprint" style="margin-top:14px"><h3><span class="l">📷 Φωτογραφία</span></h3><div id="photoBox"></div></div>
     <div class="rgrid"><div>
       ${box('ℹ️ Στοιχεία', info)}
       ${box('🔪 Κοπή & προετοιμασία', ul(x.cut), 'gold')}
@@ -149,6 +150,7 @@
   function wireRecipe(id) {
     const x = BY[id]; if (!x) return;
     const dk = S.done[id] = S.done[id] || { i: [], p: [] };
+    const pb = $('#photoBox'); if (pb) showPhoto(pb, x.name, x.wp || (window.WP || {})[x.id]);
     const tog = (arr, n) => { const i = arr.indexOf(n); i < 0 ? arr.push(n) : arr.splice(i, 1); };
     app.querySelectorAll('ul.ing li[data-i]').forEach(li => li.onclick = () => { tog(dk.i, +li.dataset.i); save(); li.classList.toggle('done'); li.firstChild.textContent = li.classList.contains('done') ? '✓' : ''; });
     app.querySelectorAll('ol.steps li').forEach(li => li.onclick = e => { if (e.target.closest('.tbtn')) return; tog(dk.p, +li.dataset.p); save(); li.classList.toggle('done'); });
@@ -197,7 +199,7 @@
     tab = tab === 'kosmos' ? 'kosmos' : 'ellada';
     const conts = [...new Set(COUNTRIES.map(c => c.c))];
     const list = tab === 'ellada' ? REGIONS : COUNTRIES.filter(c => !cont || c.c === cont);
-    const dish = k => { const x = k[2] && BY[k[2]]; return `<li class="kdish" data-q="${esc(norm(k[0] + ' ' + (k[1] || '')))}">${x ? `<a href="#/r/${x.id}">${x.emoji} <b>${esc(k[0])}</b></a>` : `<b>${esc(k[0])}</b>`}${k[1] ? ` <span class="mut small">– ${esc(k[1])}</span>` : ''}${x ? ' <span class="chip red" style="font-size:10px">συνταγή</span>' : ''}</li>`; };
+    const dish = k => { const x = k[2] && BY[k[2]]; return `<li class="kdish" data-q="${esc(norm(k[0] + ' ' + (k[1] || '')))}">${x ? `<a href="#/r/${x.id}">${x.emoji} <b>${esc(k[0])}</b></a>` : `<b>${esc(k[0])}</b>`}${k[1] ? ` <span class="mut small">– ${esc(k[1])}</span>` : ''}${x ? ' <span class="chip red" style="font-size:10px">συνταγή</span>' : ''} <button class="pbtn" data-ph="${esc(k[0])}" title="Φωτογραφία">📷</button></li>`; };
     return `<h1>🗺️ Παραδοσιακή κουζίνα</h1><p class="mut">Τα χαρακτηριστικά φαγητά και ποτά κάθε περιοχής της Ελλάδας και κάθε χώρας. Όσα έχουν <span class="chip red" style="font-size:10px">συνταγή</span> ανοίγουν με ένα κλικ.</p>
       <div class="chips"><a class="fbtn ${tab === 'ellada' ? 'on' : ''}" href="#/kouzines/ellada">🇬🇷 Ελλάδα (${REGIONS.length} περιοχές)</a><a class="fbtn ${tab === 'kosmos' ? 'on' : ''}" href="#/kouzines/kosmos">🌐 Κόσμος (${COUNTRIES.length} χώρες)</a></div>
       ${tab === 'kosmos' ? `<div class="chips"><a class="fbtn ${!cont ? 'on' : ''}" href="#/kouzines/kosmos">Όλες</a>${conts.map(c => `<a class="fbtn ${cont === c ? 'on' : ''}" href="#/kouzines/kosmos/${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div>` : ''}
@@ -251,6 +253,82 @@
   }
   const notFound = () => '<div class="empty"><div class="e">🍽️</div>Δεν βρέθηκε η σελίδα. <a href="#/" style="color:var(--red2)">Αρχική</a></div>';
 
+  /* ---------- φωτογραφίες: ΜΟΝΟ με συγκατάθεση (opt-in), από Wikimedia Commons ----------
+     Κανένα αίτημα προς τρίτους δεν γίνεται πριν πατήσει ο χρήστης «Δείξε φωτογραφία»
+     ή ενεργοποιήσει ο ίδιος την αυτόματη φόρτωση (αποθηκεύεται μόνο στη συσκευή του). */
+  const PH = {};
+  const cleanQ = s => String(s).replace(/\(.*?\)/g, '').split(/\s[–\/-]\s|\//)[0].trim();
+  const stripTags = s => String(s || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const PQ = 'action=query&format=json&origin=*&prop=pageimages%7Cinfo&piprop=thumbnail%7Cname&pithumbsize=640&inprop=url&redirects=1';
+  const okPage = p => p && p.thumbnail && p.pageimage && !/\.svg$/i.test(p.pageimage);
+  const asRes = (lang, p) => ({ lang, title: p.title, page: p.fullurl, thumb: p.thumbnail.source, file: p.pageimage });
+  // κλήση API: ταυτοποίηση εφαρμογής (Api-User-Agent, όπως ζητά η Wikimedia), σφάλμα σε HTTP≠200 (π.χ. 429 = προσωρινό όριο)
+  async function api(url) {
+    const res = await fetch(url, { referrerPolicy: 'no-referrer', headers: { 'Api-User-Agent': 'Gefseis360/1.0 (https://xomagr-eng.github.io/gefseis-360/)' } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+  async function wikiTitle(lang, title) {
+    const j = await api(`https://${lang}.wikipedia.org/w/api.php?${PQ}&titles=${encodeURIComponent(title)}`);
+    const p = Object.values((j.query || {}).pages || {})[0];
+    return okPage(p) ? asRes(lang, p) : null;
+  }
+  // ο τίτλος του λήμματος πρέπει να περιέχει (ρίζα) λέξης του πιάτου – αλλιώς «δεν βρέθηκε» αντί για λάθος εικόνα
+  const stems = (q, min = 4) => norm(q).split(/[^a-zα-ω0-9]+/).filter(w => w.length >= min && !['σαλατα', 'σουπα', 'σπιτικο', 'σπιτικη', 'κλασικο', 'χοιρινο', 'with', 'style', 'the', 'and'].includes(w)).map(w => w.length > 4 ? w.slice(0, w.length - 1) : w);
+  async function wikiSearch(lang, q) {
+    const j = await api(`https://${lang}.wikipedia.org/w/api.php?${PQ}&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=6`);
+    const st = stems(q), nq = norm(q); if (!st.length) return null;
+    const fits = t => { const main = t.replace(/\(.*?\)/g, ''); return norm(main).includes(st[0]) && stems(main, 3).every(s => nq.includes(s)); };
+    const pg = Object.values((j.query || {}).pages || {}).sort((a, b) => a.index - b.index).find(p => okPage(p) && fits(p.title));
+    return pg ? asRes(lang, pg) : null;
+  }
+  async function fileMeta(r) {
+    const u = `https://${r.lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&titles=${encodeURIComponent('File:' + r.file)}&prop=imageinfo&iiprop=extmetadata%7Curl`;
+    const j = await api(u);
+    const ii = ((Object.values(j.query.pages)[0] || {}).imageinfo || [])[0] || {}, m = ii.extmetadata || {};
+    return { artist: stripTags((m.Artist || {}).value) || 'άγνωστος δημιουργός', license: stripTags((m.LicenseShortName || {}).value) || 'ελεύθερη άδεια', src: ii.descriptionurl || r.page };
+  }
+  async function findPhoto(name, alt) {
+    const q = cleanQ(name);
+    if (PH[q] !== undefined) return PH[q];
+    let r = null, err = false;
+    if (alt === '-') return (PH[q] = null);
+    if (alt) { try { r = await wikiTitle('en', alt); } catch (e) { err = true; } }
+    if (!r) for (const lang of ['el', 'en']) { try { r = await wikiSearch(lang, q); } catch (e) { err = true; } if (r) break; }
+    if (!r && err) return { error: true };            // προσωρινό πρόβλημα δικτύου/ορίου – δεν αποθηκεύεται
+    if (r) { try { r.meta = await fileMeta(r); } catch (e) { r.meta = { artist: '', license: '', src: r.page }; } }
+    return (PH[q] = r);
+  }
+  const retryHtml = '<div class="mut small">⚠️ Η Wikimedia δεν απάντησε αυτή τη στιγμή (ή δεν υπάρχει σύνδεση). <button class="btn sm ghost" data-phgo>Δοκίμασε ξανά</button></div>';
+  function photoHtml(r) {
+    if (r && r.error) return retryHtml;
+    if (!r) return '<div class="mut small">Δεν βρέθηκε αξιόπιστη φωτογραφία για αυτό το πιάτο.</div>';
+    return `<figure class="photo" style="margin:0"><img src="${esc(r.thumb)}" alt="${esc(r.title)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=&quot;mut small&quot; style=&quot;padding:10px&quot;>⚠️ Η εικόνα δεν φορτώθηκε – δοκίμασε αργότερα.</div>'">
+      <figcaption class="cap">Ενδεικτική φωτογραφία από το λήμμα «<a href="${esc(r.page)}" target="_blank" rel="noopener noreferrer">${esc(r.title)}</a>» · ${esc(r.meta.artist)} · ${esc(r.meta.license)} · <a href="${esc(r.meta.src)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a>
+      ${S.photoAuto ? ' · <a href="#" data-phoff>απενεργοποίηση αυτόματων φωτογραφιών</a>' : ''}</figcaption></figure>`;
+  }
+  const consentHtml = () => `<div class="consent">Η φωτογραφία φορτώνεται από τη <b>Wikimedia Commons</b> (Wikipedia). Αν πατήσεις το κουμπί, ο browser σου θα συνδεθεί στους servers της Wikimedia, που θα δουν τη διεύθυνση IP σου (<a href="https://foundation.wikimedia.org/wiki/Policy:Privacy_policy" target="_blank" rel="noopener noreferrer" style="color:var(--mut)">πολιτική απορρήτου</a>). Χωρίς το κλικ σου δεν στέλνεται τίποτα.
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-phgo>📷 Δείξε φωτογραφία</button></div>
+    <label><input type="checkbox" data-phauto ${S.photoAuto ? 'checked' : ''}> Να φορτώνουν αυτόματα οι φωτογραφίες (αποθηκεύεται μόνο σε αυτή τη συσκευή)</label></div>`;
+  async function loadPhotoInto(el, name, alt) {
+    el.innerHTML = '<div class="mut small"><span class="spin"></span>Αναζήτηση φωτογραφίας…</div>';
+    const r = await findPhoto(name, alt);
+    el.innerHTML = photoHtml(r); wirePhoto(el, name, alt);
+  }
+  function wirePhoto(el, name, alt) {
+    const go = el.querySelector('[data-phgo]'); if (go) go.onclick = () => loadPhotoInto(el, name, alt);
+    const au = el.querySelector('[data-phauto]'); if (au) au.onchange = () => { S.photoAuto = au.checked; save(); if (au.checked) loadPhotoInto(el, name, alt); };
+    const off = el.querySelector('[data-phoff]'); if (off) off.onclick = e => { e.preventDefault(); S.photoAuto = false; save(); toast('Οι φωτογραφίες θα φορτώνουν μόνο με κλικ'); el.innerHTML = consentHtml(); wirePhoto(el, name, alt); };
+  }
+  function showPhoto(el, name, alt) { if (S.photoAuto) loadPhotoInto(el, name, alt); else { el.innerHTML = consentHtml(); wirePhoto(el, name, alt); } }
+  function photoModal(name, alt) {
+    const m = $('#pmodal'), b = $('#pmbody'); m.hidden = false;
+    b.innerHTML = `<h3 style="margin:0 36px 10px 0">📷 ${esc(name)}</h3><div id="pmph"></div>`;
+    showPhoto($('#pmph'), name, alt);
+  }
+  $('#pmx').onclick = () => { $('#pmodal').hidden = true; };
+  $('#pmodal').onclick = e => { if (e.target.id === 'pmodal') $('#pmodal').hidden = true; };
+
   /* ---------- timer ---------- */
   let T = { left: 0, run: false, iv: null, name: '' };
   function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(); [0, .35, .7].forEach(d => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; o.connect(g); g.connect(a.destination); g.gain.setValueAtTime(.3, a.currentTime + d); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + d + .3); o.start(a.currentTime + d); o.stop(a.currentTime + d + .3); }); } catch (e) {} if (navigator.vibrate) navigator.vibrate([300, 150, 300]); }
@@ -290,6 +368,7 @@
     if (p[0] === 'meals') { const b = $('#plan'); b.onclick = () => { $('#planOut').innerHTML = planDay(); }; }
     if (p[0] === 'fridge') { $('#frGo').onclick = runFridge; $('#frIn').onkeydown = e => { if (e.key === 'Enter') runFridge(); };
       app.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const i = $('#frIn'); i.value = (i.value.trim() ? i.value.replace(/[,\s]*$/, '') + ', ' : '') + b.dataset.add; runFridge(); }); if ($('#frIn').value) runFridge(); }
+    if (p[0] === 'kouzines') app.querySelectorAll('[data-ph]').forEach(b => b.onclick = () => photoModal(b.dataset.ph));
     if (p[0] === 'kouzines') $('#kq').oninput = e => { const t = norm(e.target.value.trim());
       app.querySelectorAll('.kreg').forEach(b => { const hitReg = !t || b.dataset.q.includes(t); let any = false;
         b.querySelectorAll('.kdish').forEach(li => { const h = hitReg || li.dataset.q.includes(t); li.style.display = h ? '' : 'none'; any = any || h; });

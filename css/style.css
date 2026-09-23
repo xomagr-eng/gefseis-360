@@ -163,6 +163,23 @@ textarea:focus,input.inp:focus{border-color:var(--red)}
 mark{background:rgba(242,184,75,.25);color:#fff;border-radius:3px}
 .match{font-size:12px;color:var(--gold)}
 
+/* photos (opt-in, Wikimedia Commons) */
+.photo{border-radius:12px;overflow:hidden;background:var(--bg2);border:1px solid var(--line)}
+.photo img{display:block;width:100%;max-height:420px;object-fit:cover;background:#111}
+.photo .cap{font-size:11px;color:var(--dim);padding:6px 10px;line-height:1.4}
+.photo .cap a{color:var(--mut);text-decoration:underline}
+.consent{font-size:13px;color:var(--mut);line-height:1.5}
+.consent label{display:flex;gap:8px;align-items:center;margin-top:8px;cursor:pointer;color:var(--txt)}
+.consent input{accent-color:var(--red);width:16px;height:16px}
+.pbtn{background:none;border:0;padding:0 0 0 4px;font-size:13px;cursor:pointer;opacity:.75}
+.pbtn:hover{opacity:1}
+.pmodal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px}
+.pmodal[hidden]{display:none}
+.pmbox{background:var(--card);border:1px solid var(--red);border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:16px;position:relative}
+.pmx{position:absolute;top:8px;right:8px;background:var(--bg2);border:1px solid var(--line);border-radius:50%;width:32px;height:32px}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--red);border-radius:50%;animation:sp 1s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
 @media print{
   .top,.bnav,.timer,.noprint{display:none!important}
   body{background:#fff;color:#000;padding:0}
