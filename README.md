@@ -1,6 +1,6 @@
 # ΓΕΥΣΕΙΣ 360°
 
-Offline web app για καφέ, ροφήματα, φαγητό ταβέρνας & ουζερί, γλυκά και ποτά: 680 συνταγές και οδηγοί με υλικά, τρόπο παρασκευής, κοπή, μαρινάδα, βαθμούς ψησίματος, σερβίρισμα, συνοδευτικά και ταίριασμα με ποτά.
+Offline web app για καφέ, ροφήματα, φαγητό ταβέρνας & ουζερί, γλυκά και ποτά: 759 συνταγές και οδηγοί + παραδοσιακή κουζίνα 15 ελληνικών περιοχών και 46 χωρών με υλικά, τρόπο παρασκευής, κοπή, μαρινάδα, βαθμούς ψησίματος, σερβίρισμα, συνοδευτικά και ταίριασμα με ποτά.
 
 ## Άνοιγμα
 - Διπλό κλικ στο `index.html` (δουλεύει offline), ή
@@ -17,3 +17,7 @@ Offline web app για καφέ, ροφήματα, φαγητό ταβέρνας
 ## Δεδομένα
 `js/data-*.js` — κάθε εγγραφή: `R(cat, sub, id, name, emoji, {d, t, s, l, cut, mar, i, p, ck, sv, sd, pr, tip, info, m, tg})`.
 Πηγές έρευνας για τον εμπλουτισμό: Wikipedia (List of coffee drinks, List of Greek dishes, Greek wine, Beer style), IBA official cocktails.
+
+## Online
+**LIVE:** https://xomagr-eng.github.io/gefseis-360/ · repo: https://github.com/xomagr-eng/gefseis-360
+Ενημέρωση: διπλό κλικ στο `deploy.cmd` (αντιγράφει τα αρχεία στο `.deploy`, commit & push).
