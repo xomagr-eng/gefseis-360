@@ -139,6 +139,10 @@
     </div><div>
       ${steps}
       ${box('🔥 Ψήσιμο & βαθμοί', ul(x.ck), 'gold')}
+      ${x.srv && x.srv.length ? box('🥃 Πώς σερβίρεται (όλοι οι τρόποι)', `<table class="kv">${x.srv.map(s => `<tr><td><b>${esc(s[0])}</b></td><td>${esc(s[1])}</td></tr>`).join('')}</table>`, 'cyan') : ''}
+      ${x.mk && x.mk.length ? box('🏭 Πώς φτιάχνεται', `<ol class="steps">${x.mk.map(s => `<li>${esc(s)}</li>`).join('')}</ol>`, 'gold') : ''}
+      ${x.rem && x.rem.length ? box('🫖 Παραδοσιακή χρήση (γιατροσόφι)', ul(x.rem) + '<p class="small mut" style="margin:8px 0 0">Λαϊκή παράδοση – δεν αντικαθιστά ιατρική συμβουλή.</p>', 'cyan') : ''}
+      ${x.warn && x.warn.length ? box('⚠️ Προσοχή', ul(x.warn), 'acc') : ''}
       ${x.sv ? box('🍽️ Σερβίρισμα', `<div class="sv">${esc(x.sv)}</div>`, 'cyan') : ''}
       ${sides.length ? box('🍟 Συνοδευτικά & σάλτσες (πώς φτιάχνονται)', `<div class="links">${sides.map(lnk).join('')}</div>`, 'cyan') : ''}
       ${pairs.length ? box(x.cat === 'krasia' || x.cat === 'mpyres' || x.cat === 'apostagmata' || x.cat === 'cocktails' ? '🍽️ Ταιριάζει με' : '🥂 Τι να πιεις μαζί', `<div class="links">${pairs.map(lnk).join('')}</div>`, 'cyan') : ''}
