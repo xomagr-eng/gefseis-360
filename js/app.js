@@ -307,11 +307,21 @@
     const ii = ((Object.values(j.query.pages)[0] || {}).imageinfo || [])[0] || {}, m = ii.extmetadata || {};
     return { artist: stripTags((m.Artist || {}).value) || 'άγνωστος δημιουργός', license: stripTags((m.LicenseShortName || {}).value) || 'ελεύθερη άδεια', src: ii.descriptionurl || r.page };
   }
+  // απευθείας αρχείο της Wikimedia Commons ('File:Όνομα.jpg') – για προϊόντα χωρίς δικό τους λήμμα
+  async function commonsFile(file) {
+    const j = await api(`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&titles=${encodeURIComponent(file)}&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640`);
+    const p = Object.values((j.query || {}).pages || {})[0] || {}, ii = (p.imageinfo || [])[0];
+    if (!ii) return null;
+    const m = ii.extmetadata || {};
+    return { lang: 'commons', title: p.title.replace(/^File:/, '').replace(/\.\w+$/, ''), page: ii.descriptionurl, thumb: ii.thumburl || ii.url, file: p.title,
+      meta: { artist: stripTags((m.Artist || {}).value) || 'άγνωστος δημιουργός', license: stripTags((m.LicenseShortName || {}).value) || 'ελεύθερη άδεια', src: ii.descriptionurl } };
+  }
   async function findPhoto(name, alt) {
     const q = cleanQ(name);
     if (PH[q] !== undefined) return PH[q];
     let r = null, err = false;
     if (alt === '-') return (PH[q] = null);
+    if (alt && /^File:/.test(alt)) { try { r = await commonsFile(alt); } catch (e) { return { error: true }; } if (r) return (PH[q] = r); }
     if (alt) { const m = /^el:(.+)$/.exec(alt); try { r = m ? await wikiTitle('el', m[1]) : await wikiTitle('en', alt); } catch (e) { err = true; } }
     if (!r) for (const lang of ['el', 'en']) { try { r = await wikiSearch(lang, q); } catch (e) { err = true; } if (r) break; }
     if (!r && err) return { error: true };            // προσωρινό πρόβλημα δικτύου/ορίου – δεν αποθηκεύεται
@@ -323,7 +333,7 @@
     if (r && r.error) return retryHtml;
     if (!r) return '<div class="mut small">Δεν βρέθηκε αξιόπιστη φωτογραφία για αυτό το πιάτο.</div>';
     return `<figure class="photo" style="margin:0"><img src="${esc(r.thumb)}" alt="${esc(r.title)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=&quot;mut small&quot; style=&quot;padding:10px&quot;>⚠️ Η εικόνα δεν φορτώθηκε – δοκίμασε αργότερα.</div>'">
-      <figcaption class="cap">Ενδεικτική φωτογραφία από το λήμμα «<a href="${esc(r.page)}" target="_blank" rel="noopener noreferrer">${esc(r.title)}</a>» · ${esc(r.meta.artist)} · ${esc(r.meta.license)} · <a href="${esc(r.meta.src)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a>
+      <figcaption class="cap">${r.lang === 'commons' ? 'Φωτογραφία' : 'Ενδεικτική φωτογραφία από το λήμμα'} «<a href="${esc(r.page)}" target="_blank" rel="noopener noreferrer">${esc(r.title)}</a>» · ${esc(r.meta.artist)} · ${esc(r.meta.license)} · <a href="${esc(r.meta.src)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a>
       ${S.photoAuto ? ' · <a href="#" data-phoff>απενεργοποίηση αυτόματων φωτογραφιών</a>' : ''}</figcaption></figure>`;
   }
   const consentHtml = () => `<div class="consent">Η φωτογραφία φορτώνεται από τη <b>Wikimedia Commons</b> (Wikipedia). Αν πατήσεις το κουμπί, ο browser σου θα συνδεθεί στους servers της Wikimedia, που θα δουν τη διεύθυνση IP σου (<a href="https://foundation.wikimedia.org/wiki/Policy:Privacy_policy" target="_blank" rel="noopener noreferrer" style="color:var(--mut)">πολιτική απορρήτου</a>). Χωρίς το κλικ σου δεν στέλνεται τίποτα.
