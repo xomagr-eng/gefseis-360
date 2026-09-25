@@ -119,7 +119,7 @@
     const ing = x.i && x.i.length ? `<div class="box acc"><h3><span class="l">🧺 Υλικά</span>${x.s ? `<span class="scale noprint"><button data-sc="-">−</button><b>${sv}</b><button data-sc="+">+</button><span class="small mut">μερ.</span></span>` : ''}</h3>
       <ul class="ing">${x.i.map((s, n) => s[0] === '#' ? `<li class="grp">${esc(s.slice(1))}</li>` : `<li data-i="${n}" class="${dk.i.includes(n) ? 'done' : ''}"><span class="cb">${dk.i.includes(n) ? '✓' : ''}</span><span>${scaleLine(s, sv / base)}</span></li>`).join('')}</ul>
       <div class="row noprint" style="margin-top:10px"><button class="btn sm" id="addList">🛒 Στη λίστα αγορών</button></div></div>` : '';
-    const steps = x.p && x.p.length ? `<div class="box acc"><h3><span class="l">👨‍🍳 ${x.cat === 'krasia' || x.cat === 'mpyres' || x.cat === 'apostagmata' ? 'Πώς το σερβίρεις' : 'Τρόπος παρασκευής'}</span></h3><ol class="steps">${x.p.map((s, n) => `<li data-p="${n}" class="${dk.p.includes(n) ? 'done' : ''}">${stepHtml(s)}</li>`).join('')}</ol></div>` : '';
+    const steps = x.p && x.p.length ? `<div class="box acc"><h3><span class="l">👨‍🍳 ${x.cat === 'krasia' || x.cat === 'mpyres' || x.cat === 'apostagmata' || (x.cat === 'galaktokomika' && x.sub !== 'spitika') ? 'Πώς το σερβίρεις' : 'Τρόπος παρασκευής'}</span></h3><ol class="steps">${x.p.map((s, n) => `<li data-p="${n}" class="${dk.p.includes(n) ? 'done' : ''}">${stepHtml(s)}</li>`).join('')}</ol></div>` : '';
     const sides = (x.sd || []).filter(i => BY[i]);
     const pairs = (x.pr || []).filter(i => BY[i]);
     const rev = (REV[id] || []).filter(i => !pairs.includes(i) && !sides.includes(i));
@@ -133,6 +133,8 @@
     <div class="box noprint" style="margin-top:14px"><h3><span class="l">📷 Φωτογραφία</span></h3><div id="photoBox"></div></div>
     <div class="rgrid"><div>
       ${box('ℹ️ Στοιχεία', info)}
+      ${x.use && x.use.length ? box('🍽️ Για τι κάνει', `<div class="meta">${x.use.map(u => `<a class="chip" href="#/s/${encodeURIComponent(u)}">${esc(u)}</a>`).join('')}</div>`, 'cyan') : ''}
+      ${x.age ? box('⏳ Ωρίμανση / παλαίωση', `<p style="margin:0">${esc(x.age)}</p>`, 'gold') : ''}
       ${box('🔪 Κοπή & προετοιμασία', ul(x.cut), 'gold')}
       ${box('🫙 Μαρινάδα', ul(x.mar), 'gold')}
       ${ing}
@@ -140,7 +142,7 @@
       ${steps}
       ${box('🔥 Ψήσιμο & βαθμοί', ul(x.ck), 'gold')}
       ${x.srv && x.srv.length ? box('🥃 Πώς σερβίρεται (όλοι οι τρόποι)', `<table class="kv">${x.srv.map(s => `<tr><td><b>${esc(s[0])}</b></td><td>${esc(s[1])}</td></tr>`).join('')}</table>`, 'cyan') : ''}
-      ${x.mk && x.mk.length ? box('🏭 Πώς φτιάχνεται', `<ol class="steps">${x.mk.map(s => `<li>${esc(s)}</li>`).join('')}</ol>`, 'gold') : ''}
+      ${x.mk && x.mk.length ? box(x.cat === 'krasia' ? '🍇 Πώς φτιάχνεται (οινοποίηση)' : x.cat === 'mpyres' ? '🌾 Πώς φτιάχνεται (ζυθοποίηση)' : '🏭 Πώς φτιάχνεται / παραγωγή', `<ol class="steps">${x.mk.map(s => `<li>${esc(s)}</li>`).join('')}</ol>`, 'gold') : ''}
       ${x.rem && x.rem.length ? box('🫖 Παραδοσιακή χρήση (γιατροσόφι)', ul(x.rem) + '<p class="small mut" style="margin:8px 0 0">Λαϊκή παράδοση – δεν αντικαθιστά ιατρική συμβουλή.</p>', 'cyan') : ''}
       ${x.warn && x.warn.length ? box('⚠️ Προσοχή', ul(x.warn), 'acc') : ''}
       ${x.sv ? box('🍽️ Σερβίρισμα', `<div class="sv">${esc(x.sv)}</div>`, 'cyan') : ''}

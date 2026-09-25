@@ -11,7 +11,7 @@ window.R = function (cat, sub, id, name, emoji, o) {
 
 window.GROUPS = [
   { id: 'rofimata', name: 'Καφές & Ροφήματα', emoji: '☕', cats: ['kafes', 'rofimata'] },
-  { id: 'fagito', name: 'Φαγητό', emoji: '🍽️', cats: ['proino', 'pites', 'souvlatzidiko', 'fastfood', 'psita', 'kynigi', 'mageirefta', 'thalassina', 'mezedes', 'salates', 'synodeftika'] },
+  { id: 'fagito', name: 'Φαγητό', emoji: '🍽️', cats: ['proino', 'pites', 'souvlatzidiko', 'fastfood', 'psita', 'kynigi', 'mageirefta', 'thalassina', 'mezedes', 'salates', 'synodeftika', 'galaktokomika'] },
   { id: 'glyka', name: 'Γλυκά', emoji: '🍰', cats: ['glyka'] },
   { id: 'pota', name: 'Ποτά', emoji: '🍷', cats: ['krasia', 'mpyres', 'cocktails', 'apostagmata'] }
 ];
