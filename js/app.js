@@ -5,7 +5,7 @@
   const app = $('#app');
   const BY = {}; DB.forEach(x => BY[x.id] = x);
   const KEY = 'gefseis360_v1';
-  let S = { fav: [], list: [], done: {} };
+  let S = { fav: [], list: [], done: {}, recent: [], notes: {}, rate: {}, plan: {} };
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} badges(); };
 
@@ -25,6 +25,14 @@
     f.hidden = !S.fav.length; f.textContent = S.fav.length;
     const open = S.list.filter(x => !x.d).length; l.hidden = !open; l.textContent = open;
   }
+  // χρόνος σε λεπτά από κείμενο όπως «30′», «1 ώρα 15′», «2 ημέρες»
+  function mins(t) {
+    t = String(t || ''); if (!t || t === '-') return 0;
+    let m = 0; const d = t.match(/(\d+(?:[.,]\d+)?)\s*ημέρ/); if (d) m += parseFloat(d[1].replace(',', '.')) * 1440;
+    const h = t.match(/(\d+(?:[.,]\d+)?)\s*ώρ/); if (h) m += parseFloat(h[1].replace(',', '.')) * 60;
+    const mm = t.match(/(\d+)\s*(?:′|λεπτ)/); if (mm) m += +mm[1];
+    return Math.round(m);
+  }
   function slotNow() { const h = new Date().getHours(); return (SLOTS.find(s => h >= s.from && h < s.to) || SLOTS[0]).id; }
 
   /* ---------- cards ---------- */
@@ -35,8 +43,9 @@
     if (x.l) chips.push(`<span class="chip">${'●'.repeat(x.l)}${'○'.repeat(3 - x.l)}</span>`);
     if (x.info && x.info['Αλκοόλ']) chips.push(`<span class="chip">${esc(x.info['Αλκοόλ'])}</span>`);
     (x.tg || []).filter(t => t !== 'αλκοόλ').slice(0, 2).forEach(t => chips.push(`<span class="chip red">${esc(t)}</span>`));
-    return `<a class="card" href="#/r/${x.id}"><span class="em">${x.emoji}</span><span class="b"><b>${esc(x.name)}</b><p>${esc(x.d || '')}</p>
-      <span class="meta"><span class="chip gold">${c.emoji} ${esc(c.subs[x.sub] || c.name)}</span>${chips.join('')}</span>${extra || ''}</span>
+    const rt = S.rate[x.id];
+    return `<a class="card" href="#/r/${x.id}" data-min="${mins(x.t)}" data-l="${x.l || 0}" data-tg="${esc((x.tg || []).join('|'))}"><span class="em">${x.emoji}</span><span class="b"><b>${esc(x.name)}</b><p>${esc(x.d || '')}</p>
+      <span class="meta"><span class="chip gold">${c.emoji} ${esc(c.subs[x.sub] || c.name)}</span>${rt ? `<span class="chip">${'⭐'.repeat(rt)}</span>` : ''}${chips.join('')}</span>${extra || ''}</span>
       ${S.fav.includes(x.id) ? '<span class="fav">❤️</span>' : ''}</a>`;
   }
   const lnk = id => { const x = BY[id]; return x ? `<a class="lnk" href="#/r/${id}">${x.emoji} ${esc(x.name)}</a>` : ''; };
@@ -52,7 +61,10 @@
       <h1>Καλώς ήρθες στις <b>ΓΕΥΣΕΙΣ 360°</b></h1>
       <div class="mut">Καφές, ροφήματα, ταβέρνα & ουζερί, γλυκά και ποτά — υλικά, τρόπος παρασκευής, κοπή, μαρινάδα, ψήσιμο και σερβίρισμα.</div>
       <div class="stats"><span class="stat"><b>${DB.length}</b> συνταγές & οδηγοί</span><span class="stat">☕ <b>${cnt('rofimata')}</b></span><span class="stat">🍽️ <b>${cnt('fagito')}</b></span><span class="stat">🍰 <b>${cnt('glyka')}</b></span><span class="stat">🍷 <b>${cnt('pota')}</b></span></div>
+      <div class="row" style="margin-top:12px"><a class="btn sm" href="#/plan">📅 Το πρόγραμμα της εβδομάδας</a><a class="btn sm ghost" href="#/fridge">🧊 Τι φτιάχνω με ό,τι έχω</a>${deferredInstall ? '<button class="btn sm ghost" id="install">📲 Εγκατάσταση στο κινητό</button>' : ''}</div>
     </section>
+    ${todayPlan()}
+    ${S.recent.filter(i => BY[i]).length ? `<div class="sect"><h2>🕘 Είδες πρόσφατα</h2></div><div class="links">${S.recent.filter(i => BY[i]).slice(0, 12).map(lnk).join('')}</div>` : ''}
     <div class="sect"><h2>${slot.emoji} Τώρα είναι ώρα για ${slot.name.toLowerCase()}</h2><a class="btn sm ghost" href="#/meals/${sl}">Όλες οι προτάσεις →</a></div>
     ${c ? `<div class="combo"><b>${esc(c.t)}</b><p>${esc(c.x)}</p><div class="links">${c.ids.map(lnk).join('')}</div></div>` : ''}
     <div class="sect"><h2>Κατηγορίες</h2></div>
@@ -64,6 +76,70 @@
     <div class="sect"><h2>🎲 Πρόταση της στιγμής</h2><a class="btn sm ghost" href="#/" onclick="setTimeout(()=>dispatchEvent(new HashChangeEvent('hashchange')));">Άλλη</a></div>
     <div class="grid">${card(rnd)}${card(pick(DB.filter(x => x.cat === 'glyka')))}${card(pick(DB.filter(x => ['krasia', 'cocktails', 'mpyres'].includes(x.cat))))}</div>`;
   }
+
+  /* ---------- 📅 εβδομαδιαίο πρόγραμμα ---------- */
+  const DAYS = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο', 'Κυριακή'];
+  const PSL = [['me', '🍽️ Μεσημέρι'], ['vr', '🌙 Βράδυ']];
+  const todayIdx = () => (new Date().getDay() + 6) % 7;
+  const MAINS = () => DB.filter(x => ['mageirefta', 'psita', 'thalassina', 'kynigi', 'pites'].includes(x.cat) && x.i && x.i.length > 2);
+  function todayPlan() {
+    const d = S.plan[todayIdx()] || {}; const ids = PSL.map(([k]) => d[k]).filter(i => BY[i]);
+    return ids.length ? `<div class="box cyan" style="margin-top:12px"><b>📅 Σήμερα (${DAYS[todayIdx()]}) μαγειρεύεις:</b><div class="links" style="margin-top:6px">${ids.map(lnk).join('')}</div></div>` : '';
+  }
+  function plan() {
+    const t = todayIdx();
+    return `<h1>📅 Το πρόγραμμα της εβδομάδας</h1><p class="mut">Βάλε πιάτα σε κάθε μέρα (από κάθε συνταγή με «📅 Στο πρόγραμμα» ή με τυχαία πρόταση εδώ). Μετά, με ένα κουμπί, όλα τα υλικά πάνε στη λίστα αγορών.</p>
+      <div class="row"><button class="btn" id="plAuto">🎲 Γέμισε όλη την εβδομάδα</button><button class="btn ghost" id="plList">🛒 Όλα τα υλικά στη λίστα</button><button class="btn ghost" id="plClr">Καθαρισμός</button></div>
+      <div class="plan" style="margin-top:12px">${DAYS.map((dn, di) => { const d = S.plan[di] || {};
+        return `<div class="pr ${di === t ? 'today' : ''}"><span class="e">${di === t ? '👉' : '📆'}</span><div style="flex:1"><b>${dn}</b>${di === t ? ' <span class="chip red">σήμερα</span>' : ''}
+          ${PSL.map(([k, n]) => { const x = BY[d[k]]; return `<div class="pslot"><span class="small mut">${n}</span> ${x ? `${lnk(x.id)} <button class="x" data-pd="${di}" data-pk="${k}" title="Αφαίρεση">✕</button>` : `<button class="btn sm ghost" data-pr="${di}" data-pk="${k}">🎲 Πρότεινε</button>`}</div>`; }).join('')}</div></div>`; }).join('')}</div>`;
+  }
+  function wirePlan() {
+    const pk = () => pick(MAINS()).id;
+    app.querySelectorAll('[data-pr]').forEach(b => b.onclick = () => { const d = S.plan[b.dataset.pr] = S.plan[b.dataset.pr] || {}; d[b.dataset.pk] = pk(); save(); render(true); });
+    app.querySelectorAll('[data-pd]').forEach(b => b.onclick = e => { e.preventDefault(); delete (S.plan[b.dataset.pd] || {})[b.dataset.pk]; save(); render(true); });
+    $('#plAuto').onclick = () => { DAYS.forEach((_, di) => { const d = S.plan[di] = S.plan[di] || {}; PSL.forEach(([k]) => { if (!d[k]) d[k] = pk(); }); }); save(); render(true); toast('🎲 Η εβδομάδα γέμισε – άλλαξε ό,τι θέλεις'); };
+    $('#plClr').onclick = () => { if (confirm('Να καθαριστεί το πρόγραμμα;')) { S.plan = {}; save(); render(true); } };
+    $('#plList').onclick = () => { let n = 0; Object.values(S.plan).forEach(d => PSL.forEach(([k]) => { const x = BY[d[k]]; if (!x || !x.i) return; x.i.forEach(s => { if (s[0] === '#' || S.list.some(l => l.t === s)) return; S.list.push({ t: s, r: x.name }); n++; }); })); save(); toast(`🛒 ${n} υλικά στη λίστα`); };
+  }
+  function planPicker(id) {
+    const m = $('#pmodal'), b = $('#pmbody'); m.hidden = false;
+    b.innerHTML = `<h3 style="margin:0 36px 10px 0">📅 Πότε θα το φτιάξεις;</h3><div class="plpick">${DAYS.map((dn, di) => `<div><b class="small">${dn}</b>${PSL.map(([k, n]) => `<button class="fbtn" data-pd="${di}" data-pk="${k}">${n}</button>`).join('')}</div>`).join('')}</div>`;
+    b.querySelectorAll('[data-pd]').forEach(x => x.onclick = () => { const d = S.plan[x.dataset.pd] = S.plan[x.dataset.pd] || {}; d[x.dataset.pk] = id; save(); m.hidden = true; toast(`📅 ${DAYS[x.dataset.pd]} – στο πρόγραμμα`); });
+  }
+
+  /* ---------- 👨‍🍳 λειτουργία μαγειρέματος ---------- */
+  let CK = { id: null, n: 0, wl: null, speak: false };
+  function cookOpen(id) {
+    const x = BY[id]; if (!x || !x.p) return; CK = { id, n: 0, wl: null, speak: false };
+    $('#cook').hidden = false; document.body.style.overflow = 'hidden';
+    try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(w => CK.wl = w).catch(() => {}); } catch (e) {}
+    cookDraw();
+  }
+  function cookClose() { $('#cook').hidden = true; document.body.style.overflow = ''; try { CK.wl && CK.wl.release(); } catch (e) {} try { speechSynthesis.cancel(); } catch (e) {} }
+  function say(t) { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'el-GR'; u.rate = .95; speechSynthesis.speak(u); } catch (e) {} }
+  function cookDraw() {
+    const x = BY[CK.id], N = x.p.length, s = x.p[CK.n];
+    $('#ckbody').innerHTML = `<div class="ckhead"><span class="big">${x.emoji}</span><div><b>${esc(x.name)}</b><div class="small mut">Βήμα ${CK.n + 1} από ${N}</div></div></div>
+      <div class="ckbar"><span style="width:${(CK.n + 1) / N * 100}%"></span></div>
+      <div class="ckstep">${stepHtml(s)}</div>
+      ${x.i && x.i.length ? `<details class="ckings"><summary>🧺 Υλικά (${x.i.filter(i => i[0] !== '#').length})</summary><ul class="plain">${x.i.map(i => i[0] === '#' ? `<li><b>${esc(i.slice(1))}</b></li>` : `<li>${esc(i)}</li>`).join('')}</ul></details>` : ''}
+      <div class="ckbtns"><button class="btn ghost" id="ckPrev" ${CK.n ? '' : 'disabled'}>◀ Πίσω</button><button class="btn ghost" id="ckSay">${CK.speak ? '🔊 Ανάγνωση: ON' : '🔈 Διάβασέ το'}</button>${CK.n < N - 1 ? '<button class="btn" id="ckNext">Επόμενο ▶</button>' : '<button class="btn" id="ckEnd">✅ Τέλος – καλή όρεξη!</button>'}</div>
+      <p class="small mut" style="text-align:center;margin-top:10px">Η οθόνη μένει αναμμένη όσο μαγειρεύεις · πλήκτρα ← → για πλοήγηση</p>`;
+    const go = d => { CK.n = Math.max(0, Math.min(N - 1, CK.n + d)); cookDraw(); if (CK.speak) say(x.p[CK.n]); };
+    $('#ckPrev').onclick = () => go(-1);
+    const nx = $('#ckNext'); if (nx) nx.onclick = () => go(1);
+    const en = $('#ckEnd'); if (en) en.onclick = () => { cookClose(); toast('😋 Καλή όρεξη!'); };
+    $('#ckSay').onclick = () => { CK.speak = !CK.speak; cookDraw(); if (CK.speak) say(s); else try { speechSynthesis.cancel(); } catch (e) {} };
+    $('#ckbody').querySelectorAll('.tbtn').forEach(b => b.onclick = () => startTimer(+b.dataset.min, x.name));
+  }
+  $('#ckx').onclick = cookClose;
+  addEventListener('keydown', e => { if ($('#cook').hidden) return; if (e.key === 'ArrowRight') { const b = $('#ckNext'); b && b.click(); } else if (e.key === 'ArrowLeft') { const b = $('#ckPrev'); b && !b.disabled && b.click(); } else if (e.key === 'Escape') cookClose(); });
+  document.addEventListener('visibilitychange', () => { if (!$('#cook').hidden && document.visibilityState === 'visible' && navigator.wakeLock) navigator.wakeLock.request('screen').then(w => CK.wl = w).catch(() => {}); });
+
+  /* ---------- 📲 εγκατάσταση PWA ---------- */
+  let deferredInstall = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if (!location.hash || location.hash === '#/') render(true); });
 
   function group(gid) {
     const g = GROUPS.find(x => x.id === gid); if (!g) return notFound();
@@ -86,7 +162,8 @@
       <h1>${c.emoji} ${c.name}</h1><p class="mut">${esc(c.desc)}</p>
       <div class="chips"><a class="fbtn ${!sub || sub === '_' ? 'on' : ''}" href="#/c/${k}">Όλα</a>${Object.entries(c.subs).map(([s, n]) => `<a class="fbtn ${sub === s ? 'on' : ''}" href="#/c/${k}/${s}">${esc(n)}</a>`).join('')}</div>
       ${tags.length ? `<div class="chips">${tags.map(t => `<a class="fbtn ${tag === t ? 'on' : ''}" href="#/c/${k}/${sub || '_'}/${encodeURIComponent(tag === t ? '' : t)}">#${esc(t)}</a>`).join('')}</div>` : ''}
-      <div class="grid">${items.map(x => card(x)).join('') || '<div class="empty">Τίποτα εδώ.</div>'}</div>`;
+      <div class="chips qf"><span class="small mut">Γρήγορα φίλτρα:</span><button class="fbtn" data-qf="fast">⚡ Έως 30′</button><button class="fbtn" data-qf="easy">🙂 Εύκολα</button><button class="fbtn" data-qf="nist">✝️ Νηστίσιμα</button><button class="fbtn" data-qf="fav">❤️ Αγαπημένα μου</button><span class="small mut" id="qfN"></span></div>
+      <div class="grid" id="cgrid">${items.map(x => card(x)).join('') || '<div class="empty">Τίποτα εδώ.</div>'}</div>`;
   }
 
   /* scaling of leading quantities */
@@ -129,7 +206,7 @@
     const isFav = S.fav.includes(id);
     return `<div class="crumbs"><a href="#/">Αρχική</a> › <a href="#/g/${g.id}">${g.name}</a> › <a href="#/c/${x.cat}">${c.name}</a> › <a href="#/c/${x.cat}/${x.sub}">${esc(c.subs[x.sub] || '')}</a></div>
     <div class="rhead"><span class="big">${x.emoji}</span><div style="flex:1;min-width:0"><h1>${esc(x.name)}</h1><p>${esc(x.d || '')}</p><div class="meta">${chips}</div>
-      <div class="row noprint" style="margin-top:12px"><button class="btn sm ${isFav ? '' : 'ghost'}" id="fav">${isFav ? '❤️ Στα αγαπημένα' : '🤍 Αγαπημένο'}</button><button class="btn sm ghost" id="print">🖨️ Εκτύπωση</button><button class="btn sm ghost" id="copy">📋 Αντιγραφή</button>${(dk.i.length || dk.p.length) ? '<button class="btn sm ghost" id="reset">↺ Μηδενισμός</button>' : ''}</div></div></div>
+      <div class="row noprint" style="margin-top:12px">${x.p && x.p.length > 1 && x.i ? '<button class="btn sm" id="cookBtn">👨‍🍳 Μαγείρεψέ το βήμα-βήμα</button>' : ''}<button class="btn sm ${isFav ? '' : 'ghost'}" id="fav">${isFav ? '❤️ Στα αγαπημένα' : '🤍 Αγαπημένο'}</button>${x.i && x.i.length ? '<button class="btn sm ghost" id="toPlan">📅 Στο πρόγραμμα</button>' : ''}<button class="btn sm ghost" id="share">📤 Κοινοποίηση</button><button class="btn sm ghost" id="print">🖨️ Εκτύπωση</button><button class="btn sm ghost" id="copy">📋 Αντιγραφή</button>${(dk.i.length || dk.p.length) ? '<button class="btn sm ghost" id="reset">↺ Μηδενισμός</button>' : ''}</div></div></div>
     <div class="box noprint" style="margin-top:14px"><h3><span class="l">📷 Φωτογραφία</span></h3><div id="photoBox"></div></div>
     <div class="rgrid"><div>
       ${box('ℹ️ Στοιχεία', info)}
@@ -150,6 +227,8 @@
       ${pairs.length ? box(x.cat === 'krasia' || x.cat === 'mpyres' || x.cat === 'apostagmata' || x.cat === 'cocktails' ? '🍽️ Ταιριάζει με' : '🥂 Τι να πιεις μαζί', `<div class="links">${pairs.map(lnk).join('')}</div>`, 'cyan') : ''}
       ${rev.length ? box('🔗 Το προτείνουν επίσης', `<div class="links">${rev.slice(0, 18).map(lnk).join('')}</div>`) : ''}
       ${box('💡 Μυστικά & συμβουλές', ul(x.tip))}
+      <div class="box noprint"><h3><span class="l">📝 Οι σημειώσεις μου</span><span class="stars" id="stars">${[1, 2, 3, 4, 5].map(n => `<button data-st="${n}" class="${(S.rate[id] || 0) >= n ? 'on' : ''}" title="${n}/5">★</button>`).join('')}</span></h3>
+        <textarea class="inp" id="note" rows="3" placeholder="Π.χ. «λιγότερο αλάτι», «έβαλα και μανιτάρια», «το λάτρεψαν τα παιδιά»… (μένει μόνο σε αυτή τη συσκευή)">${esc(S.notes[id] || '')}</textarea></div>
     </div></div>
     <div class="sect"><h2>Παρόμοια</h2></div><div class="grid">${DB.filter(z => z.sub === x.sub && z.cat === x.cat && z.id !== id).slice(0, 6).map(z => card(z)).join('')}</div>`;
   }
@@ -157,6 +236,13 @@
   function wireRecipe(id) {
     const x = BY[id]; if (!x) return;
     const dk = S.done[id] = S.done[id] || { i: [], p: [] };
+    S.recent = [id].concat((S.recent || []).filter(i => i !== id)).slice(0, 20); save();
+    const cb = $('#cookBtn'); if (cb) cb.onclick = () => cookOpen(id);
+    const tp = $('#toPlan'); if (tp) tp.onclick = () => planPicker(id);
+    const sh = $('#share'); if (sh) sh.onclick = () => { const url = location.href.split('#')[0] + '#/r/' + id, data = { title: x.name + ' · ΓΕΥΣΕΙΣ 360°', text: x.d || x.name, url };
+      if (navigator.share) navigator.share(data).catch(() => {}); else (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => toast('🔗 Ο σύνδεσμος αντιγράφηκε'), () => toast(url)); };
+    const nt = $('#note'); if (nt) { let tmo; nt.oninput = () => { clearTimeout(tmo); tmo = setTimeout(() => { const v = nt.value.trim(); if (v) S.notes[id] = v; else delete S.notes[id]; save(); }, 400); }; }
+    app.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { const n = +b.dataset.st; S.rate[id] = S.rate[id] === n ? 0 : n; if (!S.rate[id]) delete S.rate[id]; save(); app.querySelectorAll('[data-st]').forEach(z => z.classList.toggle('on', (S.rate[id] || 0) >= +z.dataset.st)); toast(S.rate[id] ? `⭐ ${S.rate[id]}/5` : 'Η βαθμολογία αφαιρέθηκε'); });
     const pb = $('#photoBox'); if (pb) showPhoto(pb, x.name, x.wp || (window.WP || {})[x.id]);
     const tog = (arr, n) => { const i = arr.indexOf(n); i < 0 ? arr.push(n) : arr.splice(i, 1); };
     app.querySelectorAll('ul.ing li[data-i]').forEach(li => li.onclick = () => { tog(dk.i, +li.dataset.i); save(); li.classList.toggle('done'); li.firstChild.textContent = li.classList.contains('done') ? '✓' : ''; });
@@ -228,7 +314,11 @@
 
   function favs() {
     const it = S.fav.map(i => BY[i]).filter(Boolean);
-    return `<h1>❤️ Αγαπημένα</h1>${it.length ? `<div class="grid">${it.map(x => card(x)).join('')}</div>` : '<div class="empty"><div class="e">🤍</div>Πάτα «Αγαπημένο» σε μια συνταγή για να τη βρίσκεις εδώ.</div>'}`;
+    const rated = Object.keys(S.rate).filter(i => BY[i]).sort((a, b) => S.rate[b] - S.rate[a]);
+    const noted = Object.keys(S.notes).filter(i => BY[i]);
+    return `<h1>❤️ Αγαπημένα</h1>${it.length ? `<div class="grid">${it.map(x => card(x)).join('')}</div>` : '<div class="empty"><div class="e">🤍</div>Πάτα «Αγαπημένο» σε μια συνταγή για να τη βρίσκεις εδώ.</div>'}
+      ${rated.length ? `<div class="sect"><h2>⭐ Οι βαθμολογίες μου</h2></div><div class="grid">${rated.map(i => card(BY[i])).join('')}</div>` : ''}
+      ${noted.length ? `<div class="sect"><h2>📝 Συνταγές με σημειώσεις μου</h2></div><div class="grid">${noted.map(i => card(BY[i], `<span class="match">📝 ${esc(S.notes[i].slice(0, 80))}</span>`)).join('')}</div>` : ''}`;
   }
   function list() {
     return `<h1>🛒 Λίστα αγορών</h1>
@@ -388,12 +478,19 @@
       case 'fav': html = favs(); nav = ''; break;
       case 'list': html = list(); nav = ''; break;
       case 'fridge': html = fridge(); nav = ''; break;
+      case 'plan': html = plan(); nav = ''; break;
       case 's': html = search(p.slice(1).join('/')); nav = ''; break;
       default: html = notFound();
     }
     app.innerHTML = html;
     document.querySelectorAll('#bnav a').forEach(a => a.classList.toggle('on', a.dataset.k === nav));
     if (p[0] === 'r') wireRecipe(p[1]);
+    if (p[0] === 'plan') wirePlan();
+    if (p[0] === 'c') { const on = new Set(); const apply = () => { let n = 0; app.querySelectorAll('#cgrid .card').forEach(c => { const m = +c.dataset.min, l = +c.dataset.l, tg = c.dataset.tg || '', id = c.getAttribute('href').slice(4);
+        const ok = (!on.has('fast') || (m > 0 && m <= 30)) && (!on.has('easy') || l === 1) && (!on.has('nist') || /νηστίσιμο|vegan/.test(tg)) && (!on.has('fav') || S.fav.includes(id)); c.style.display = ok ? '' : 'none'; if (ok) n++; });
+        $('#qfN').textContent = on.size ? `${n} αποτελέσματα` : ''; };
+      app.querySelectorAll('[data-qf]').forEach(b => b.onclick = () => { const k = b.dataset.qf; on.has(k) ? on.delete(k) : on.add(k); b.classList.toggle('on'); apply(); }); }
+    if (!p[0]) { const ib = $('#install'); if (ib) ib.onclick = () => { deferredInstall.prompt(); deferredInstall.userChoice.finally(() => { deferredInstall = null; render(true); }); }; }
     if (p[0] === 'list') wireList();
     if (p[0] === 'meals') { const b = $('#plan'); b.onclick = () => { $('#planOut').innerHTML = planDay(); }; }
     if (p[0] === 'fridge') { $('#frGo').onclick = runFridge; $('#frIn').onkeydown = e => { if (e.key === 'Enter') runFridge(); };
