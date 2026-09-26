@@ -207,3 +207,80 @@ textarea.inp{width:100%;resize:vertical;font:inherit;box-sizing:border-box}
 .plpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.plpick>div{display:flex;flex-direction:column;gap:6px}
 .qf{align-items:center}
 .pslot .x{background:none;border:0;color:var(--dim);font-size:14px;cursor:pointer}
+
+/* ---------- ⚠️ αλλεργίες ---------- */
+.chip.alg{background:var(--redbg);border-color:var(--red);color:#fff}
+.card.bad{border-color:#5a1a20}
+.alwarn{display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:14px 16px;border-radius:var(--r);background:var(--redbg);border:1px solid var(--red);font-size:15px;line-height:1.5}
+.alwarn>span:first-child,.alwarn{font-size:15px}
+.algrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.alopt{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;transition:.15s}
+.alopt:hover{border-color:var(--red)}
+.alopt.on{background:var(--redbg);border-color:var(--red)}
+.alopt input{accent-color:var(--red);width:18px;height:18px;flex:none}
+.alopt .e{font-size:22px;flex:none}
+.alopt .t{font-size:14px;line-height:1.35}.alopt .t small{display:block;color:var(--dim);font-size:11px}
+.swl{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}.swl input{accent-color:var(--red);width:18px;height:18px}
+/* ---------- 🥗 θρεπτικά ---------- */
+.nutri{display:flex;gap:16px;align-items:center}
+.nutri .kc{flex:none;width:86px;height:86px;border-radius:50%;display:grid;place-content:center;text-align:center;background:radial-gradient(circle at 30% 25%,#3a1418,#1a1a21);border:2px solid var(--red)}
+.nutri .kc b{font-size:24px;line-height:1}.nutri .kc span{font-size:11px;color:var(--mut)}
+.nutri .mac{flex:1;min-width:0}
+.nutri .bar{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--bg2)}
+.nutri .bar span{display:block;height:100%}
+.nutri .p,.nutri i.p{background:var(--red)}.nutri .c,.nutri i.c{background:var(--gold)}.nutri .f,.nutri i.f{background:var(--cyan)}
+.nutri .lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px;color:var(--mut)}
+.nutri .lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.nutri .lg b{color:var(--txt)}
+/* ---------- 🔁 μετατροπή ---------- */
+ul.conv{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+ul.conv li{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:14px;line-height:1.45}
+ul.conv s{color:var(--dim);display:block;font-size:13px}
+ul.conv span{color:var(--txt)}
+
+/* ---------- 📱↔ οριζόντια θέση (κινητό / τάμπλετ) ---------- */
+@media (orientation: landscape) and (min-width: 640px){
+  .rgrid{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+  /* μαγείρεμα: βήμα αριστερά, υλικά δεξιά */
+  .ckbox{max-width:1200px;height:100%;display:flex;flex-direction:column}
+  #ckbody{flex:1;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:auto auto 1fr auto auto;column-gap:22px;min-height:0}
+  #ckbody>.ckhead,#ckbody>.ckbar{grid-column:1/-1}
+  #ckbody>.ckstep{grid-column:1;display:flex;align-items:center;min-height:0;font-size:clamp(20px,3.2vw,34px)}
+  #ckbody>.ckings{grid-column:2;grid-row:3/5;margin:0;overflow:auto}
+  #ckbody>.ckbtns{grid-column:1}
+  #ckbody>p{grid-column:1/-1}
+}
+/* αφής + οριζόντια: η κάτω μπάρα γίνεται πλαϊνή, κερδίζοντας ύψος */
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 900px){
+  body{padding-bottom:12px;padding-left:calc(76px + env(safe-area-inset-left))}
+  .bnav{top:0;right:auto;width:calc(76px + env(safe-area-inset-left));flex-direction:column;justify-content:center;gap:4px;border-top:0;border-right:1px solid var(--line);padding:8px 4px 8px calc(4px + env(safe-area-inset-left))}
+  .bnav a{flex:0 0 auto;padding:8px 0}
+  .bnav a.on:after{display:none}
+  .bnav a.on{background:var(--redbg)}
+  .top .wrap{height:52px}
+  .wrap{max-width:none;padding-left:18px;padding-right:18px}
+  .timer{bottom:12px}
+}
+@media (orientation: landscape) and (pointer: coarse) and (min-width: 960px){
+  .hbtn.opt{display:grid!important}
+  .logo span.t{display:inline!important}
+}
+@media (orientation: landscape) and (pointer: coarse) and (max-width: 959px){
+  .logo span.t{display:none}.hbtn.opt{display:none}
+  .search{min-width:180px;flex:1}
+}
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 500px){
+  .bnav{gap:0}.bnav a{padding:3px 0;font-size:10px}.bnav a .e{font-size:19px}
+  .top .wrap{height:46px}
+  .rhead{padding:12px}.rhead .big{width:62px;height:62px;font-size:38px}.rhead h1{font-size:20px}
+  .hero{padding:14px}
+  .ckbox{padding:12px 16px}.ckbar{margin:8px 0 10px}.ckhead .big{font-size:28px}
+  .ckbtns .btn{padding:9px}
+}
+/* μεγάλες οθόνες (τάμπλετ οριζόντια / desktop) */
+@media (min-width: 1280px){
+  .wrap{max-width:1360px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+}
+@media(max-width:420px){.hbtn.opt2{display:none}}

@@ -5,7 +5,7 @@
   const app = $('#app');
   const BY = {}; DB.forEach(x => BY[x.id] = x);
   const KEY = 'gefseis360_v1';
-  let S = { fav: [], list: [], done: {}, recent: [], notes: {}, rate: {}, plan: {} };
+  let S = { fav: [], list: [], done: {}, recent: [], notes: {}, rate: {}, plan: {}, allergies: [], alHide: false };
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} badges(); };
 
@@ -14,6 +14,10 @@
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const catOf = x => CATS[x.cat];
   const groupOf = cat => GROUPS.find(g => g.cats.includes(cat));
+  const H = window.HEALTH;
+  // ποια από τα αλλεργιογόνα του χρήστη περιέχει η συνταγή
+  const myAl = x => { if (!S.allergies.length) return []; const a = H.allergensOf(x); return S.allergies.filter(id => a.includes(id)); };
+  const kcalOf = x => { const n = H.nutritionOf(x); return n ? Math.round(n.k) : 0; };
 
   // reverse pairings: drink -> foods that reference it
   const REV = {};
@@ -21,7 +25,8 @@
 
   function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); }
   function badges() {
-    const f = $('#favN'), l = $('#listN');
+    const f = $('#favN'), l = $('#listN'), al = $('#alN');
+    if (al) { al.hidden = !S.allergies.length; al.textContent = S.allergies.length; }
     f.hidden = !S.fav.length; f.textContent = S.fav.length;
     const open = S.list.filter(x => !x.d).length; l.hidden = !open; l.textContent = open;
   }
@@ -43,8 +48,10 @@
     if (x.l) chips.push(`<span class="chip">${'●'.repeat(x.l)}${'○'.repeat(3 - x.l)}</span>`);
     if (x.info && x.info['Αλκοόλ']) chips.push(`<span class="chip">${esc(x.info['Αλκοόλ'])}</span>`);
     (x.tg || []).filter(t => t !== 'αλκοόλ').slice(0, 2).forEach(t => chips.push(`<span class="chip red">${esc(t)}</span>`));
-    const rt = S.rate[x.id];
-    return `<a class="card" href="#/r/${x.id}" data-min="${mins(x.t)}" data-l="${x.l || 0}" data-tg="${esc((x.tg || []).join('|'))}"><span class="em">${x.emoji}</span><span class="b"><b>${esc(x.name)}</b><p>${esc(x.d || '')}</p>
+    const rt = S.rate[x.id], bad = myAl(x);
+    if (bad.length && S.alHide) return '';
+    if (bad.length) chips.unshift(`<span class="chip alg" title="${esc(bad.map(i => H.ABY[i].n).join(', '))}">⚠️ ${esc(H.ABY[bad[0]].n.split(' (')[0])}${bad.length > 1 ? ' +' + (bad.length - 1) : ''}</span>`);
+    return `<a class="card${bad.length ? ' bad' : ''}" href="#/r/${x.id}" data-min="${mins(x.t)}" data-l="${x.l || 0}" data-al="${bad.length}" data-kc="${kcalOf(x)}" data-tg="${esc((x.tg || []).join('|'))}"><span class="em">${x.emoji}</span><span class="b"><b>${esc(x.name)}</b><p>${esc(x.d || '')}</p>
       <span class="meta"><span class="chip gold">${c.emoji} ${esc(c.subs[x.sub] || c.name)}</span>${rt ? `<span class="chip">${'⭐'.repeat(rt)}</span>` : ''}${chips.join('')}</span>${extra || ''}</span>
       ${S.fav.includes(x.id) ? '<span class="fav">❤️</span>' : ''}</a>`;
   }
@@ -61,7 +68,7 @@
       <h1>Καλώς ήρθες στις <b>ΓΕΥΣΕΙΣ 360°</b></h1>
       <div class="mut">Καφές, ροφήματα, ταβέρνα & ουζερί, γλυκά και ποτά — υλικά, τρόπος παρασκευής, κοπή, μαρινάδα, ψήσιμο και σερβίρισμα.</div>
       <div class="stats"><span class="stat"><b>${DB.length}</b> συνταγές & οδηγοί</span><span class="stat">☕ <b>${cnt('rofimata')}</b></span><span class="stat">🍽️ <b>${cnt('fagito')}</b></span><span class="stat">🍰 <b>${cnt('glyka')}</b></span><span class="stat">🍷 <b>${cnt('pota')}</b></span></div>
-      <div class="row" style="margin-top:12px"><a class="btn sm" href="#/plan">📅 Το πρόγραμμα της εβδομάδας</a><a class="btn sm ghost" href="#/fridge">🧊 Τι φτιάχνω με ό,τι έχω</a>${deferredInstall ? '<button class="btn sm ghost" id="install">📲 Εγκατάσταση στο κινητό</button>' : ''}</div>
+      <div class="row" style="margin-top:12px"><a class="btn sm" href="#/plan">📅 Το πρόγραμμα της εβδομάδας</a><a class="btn sm ghost" href="#/fridge">🧊 Τι φτιάχνω με ό,τι έχω</a><a class="btn sm ghost" href="#/allergies">⚠️ Οι αλλεργίες μου${S.allergies.length ? ` (${S.allergies.length})` : ''}</a>${deferredInstall ? '<button class="btn sm ghost" id="install">📲 Εγκατάσταση στο κινητό</button>' : ''}</div>
     </section>
     ${todayPlan()}
     ${S.recent.filter(i => BY[i]).length ? `<div class="sect"><h2>🕘 Είδες πρόσφατα</h2></div><div class="links">${S.recent.filter(i => BY[i]).slice(0, 12).map(lnk).join('')}</div>` : ''}
@@ -123,7 +130,7 @@
     $('#ckbody').innerHTML = `<div class="ckhead"><span class="big">${x.emoji}</span><div><b>${esc(x.name)}</b><div class="small mut">Βήμα ${CK.n + 1} από ${N}</div></div></div>
       <div class="ckbar"><span style="width:${(CK.n + 1) / N * 100}%"></span></div>
       <div class="ckstep">${stepHtml(s)}</div>
-      ${x.i && x.i.length ? `<details class="ckings"><summary>🧺 Υλικά (${x.i.filter(i => i[0] !== '#').length})</summary><ul class="plain">${x.i.map(i => i[0] === '#' ? `<li><b>${esc(i.slice(1))}</b></li>` : `<li>${esc(i)}</li>`).join('')}</ul></details>` : ''}
+      ${x.i && x.i.length ? `<details class="ckings" ${WIDE() ? 'open' : ''}><summary>🧺 Υλικά (${x.i.filter(i => i[0] !== '#').length})</summary><ul class="plain">${x.i.map(i => i[0] === '#' ? `<li><b>${esc(i.slice(1))}</b></li>` : `<li>${esc(i)}</li>`).join('')}</ul></details>` : ''}
       <div class="ckbtns"><button class="btn ghost" id="ckPrev" ${CK.n ? '' : 'disabled'}>◀ Πίσω</button><button class="btn ghost" id="ckSay">${CK.speak ? '🔊 Ανάγνωση: ON' : '🔈 Διάβασέ το'}</button>${CK.n < N - 1 ? '<button class="btn" id="ckNext">Επόμενο ▶</button>' : '<button class="btn" id="ckEnd">✅ Τέλος – καλή όρεξη!</button>'}</div>
       <p class="small mut" style="text-align:center;margin-top:10px">Η οθόνη μένει αναμμένη όσο μαγειρεύεις · πλήκτρα ← → για πλοήγηση</p>`;
     const go = d => { CK.n = Math.max(0, Math.min(N - 1, CK.n + d)); cookDraw(); if (CK.speak) say(x.p[CK.n]); };
@@ -133,6 +140,9 @@
     $('#ckSay').onclick = () => { CK.speak = !CK.speak; cookDraw(); if (CK.speak) say(s); else try { speechSynthesis.cancel(); } catch (e) {} };
     $('#ckbody').querySelectorAll('.tbtn').forEach(b => b.onclick = () => startTimer(+b.dataset.min, x.name));
   }
+  const WIDE = () => matchMedia('(orientation: landscape) and (min-width: 640px)').matches;
+  // όταν γυρίζει η συσκευή, ξαναστήνεται η οθόνη μαγειρέματος στη νέα διάταξη
+  let rzT; addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { if (!$('#cook').hidden) cookDraw(); }, 150); });
   $('#ckx').onclick = cookClose;
   addEventListener('keydown', e => { if ($('#cook').hidden) return; if (e.key === 'ArrowRight') { const b = $('#ckNext'); b && b.click(); } else if (e.key === 'ArrowLeft') { const b = $('#ckPrev'); b && !b.disabled && b.click(); } else if (e.key === 'Escape') cookClose(); });
   document.addEventListener('visibilitychange', () => { if (!$('#cook').hidden && document.visibilityState === 'visible' && navigator.wakeLock) navigator.wakeLock.request('screen').then(w => CK.wl = w).catch(() => {}); });
@@ -162,7 +172,7 @@
       <h1>${c.emoji} ${c.name}</h1><p class="mut">${esc(c.desc)}</p>
       <div class="chips"><a class="fbtn ${!sub || sub === '_' ? 'on' : ''}" href="#/c/${k}">Όλα</a>${Object.entries(c.subs).map(([s, n]) => `<a class="fbtn ${sub === s ? 'on' : ''}" href="#/c/${k}/${s}">${esc(n)}</a>`).join('')}</div>
       ${tags.length ? `<div class="chips">${tags.map(t => `<a class="fbtn ${tag === t ? 'on' : ''}" href="#/c/${k}/${sub || '_'}/${encodeURIComponent(tag === t ? '' : t)}">#${esc(t)}</a>`).join('')}</div>` : ''}
-      <div class="chips qf"><span class="small mut">Γρήγορα φίλτρα:</span><button class="fbtn" data-qf="fast">⚡ Έως 30′</button><button class="fbtn" data-qf="easy">🙂 Εύκολα</button><button class="fbtn" data-qf="nist">✝️ Νηστίσιμα</button><button class="fbtn" data-qf="fav">❤️ Αγαπημένα μου</button><span class="small mut" id="qfN"></span></div>
+      <div class="chips qf"><span class="small mut">Γρήγορα φίλτρα:</span><button class="fbtn" data-qf="fast">⚡ Έως 30′</button><button class="fbtn" data-qf="easy">🙂 Εύκολα</button><button class="fbtn" data-qf="nist">✝️ Νηστίσιμα</button><button class="fbtn" data-qf="fav">❤️ Αγαπημένα μου</button><button class="fbtn" data-qf="light">🪶 Ελαφριά (έως 450 kcal)</button>${S.allergies.length ? '<button class="fbtn" data-qf="safe">🛡️ Χωρίς τις αλλεργίες μου</button>' : '<a class="fbtn" href="#/allergies">⚠️ Όρισε αλλεργίες</a>'}<span class="small mut" id="qfN"></span></div>
       <div class="grid" id="cgrid">${items.map(x => card(x)).join('') || '<div class="empty">Τίποτα εδώ.</div>'}</div>`;
   }
 
@@ -204,17 +214,36 @@
       + (x.m || []).map(m => { const s = SLOTS.find(z => z.id === m); return `<a class="chip red" href="#/meals/${m}">${s.emoji} ${s.name}</a>`; }).join('')
       + (x.tg || []).map(t => `<a class="chip" href="#/s/${encodeURIComponent(t)}">#${esc(t)}</a>`).join('');
     const isFav = S.fav.includes(id);
+    const bad = myAl(x), alls = H.allergensOf(x);
+    const nu = H.nutritionOf(x);
+    const nuBox = nu ? box(`🥗 Θρεπτική αξία <span class="small mut">(≈ ${esc(nu.per)})</span>`, (() => {
+      const pk = nu.p * 4, ck = nu.c * 4, fk = nu.f * 9, tot = pk + ck + fk || 1;
+      return `<div class="nutri"><div class="kc"><b>${Math.round(nu.k)}</b><span>kcal</span></div>
+        <div class="mac"><div class="bar"><span class="p" style="width:${pk / tot * 100}%"></span><span class="c" style="width:${ck / tot * 100}%"></span><span class="f" style="width:${fk / tot * 100}%"></span></div>
+        <div class="lg"><span><i class="p"></i>Πρωτεΐνη <b>${Math.round(nu.p)} γρ.</b></span><span><i class="c"></i>Υδατάνθρ. <b>${Math.round(nu.c)} γρ.</b></span><span><i class="f"></i>Λιπαρά <b>${Math.round(nu.f)} γρ.</b></span></div></div></div>
+        <p class="small mut" style="margin:8px 0 0">Ενδεικτική εκτίμηση από τα υλικά${nu.q < 0.8 ? ' (δεν αναγνωρίστηκαν όλα)' : ''} – όχι εργαστηριακή ανάλυση.</p>`; })(), 'cyan') : '';
+    const alBox = box('⚠️ Αλλεργιογόνα & ευαισθησίες', (alls.length ? `<div class="meta">${alls.map(a => { const A = H.ABY[a]; return `<span class="chip ${S.allergies.includes(a) ? 'alg' : ''}" title="${esc(A.n)}">${A.e} ${esc(A.n.split(' (')[0])}</span>`; }).join('')}</div>` : '<p style="margin:0">Δεν εντοπίστηκε κάποιο από τα γνωστά αλλεργιογόνα στα υλικά.</p>')
+      + `<p class="small mut" style="margin:8px 0 0">Αυτόματος εντοπισμός από τα υλικά – έλεγξε πάντα και τις ετικέτες των προϊόντων. <a href="#/allergies" style="color:var(--gold)">⚙️ Οι αλλεργίες μου${S.allergies.length ? ` (${S.allergies.length})` : ''}</a></p>`);
+    const cv = x.i && x.i.length ? H.convertOf(x) : null, isNist = (x.tg || []).some(t => /νηστισ|vegan/i.test(t)), isVg = (x.tg || []).some(t => /vegan/i.test(t));
+    const cvList = (a, ok) => a.length ? `<ul class="conv">${a.map(([o, n]) => `<li><s>${esc(o)}</s><span>➜ ${esc(n)}</span></li>`).join('')}</ul>` : `<p style="margin:0">✔ ${ok}</p>`;
+    const cvBox = cv && (cv.nist.length || cv.vegan.length) ? `<div class="box gold noprint"><h3><span class="l">🔁 Μετατροπή συνταγής</span><span class="chips" style="margin:0"><button class="fbtn on" data-cv="nist">✝️ Νηστίσιμο</button><button class="fbtn" data-cv="vegan">🫘 Vegan</button></span></h3>
+      <div data-cvp="nist">${cvList(isNist ? [] : cv.nist, 'Είναι ήδη νηστίσιμο.')}${cv.oil ? '<p class="small mut" style="margin:8px 0 0">Τετάρτη & Παρασκευή αυστηρής νηστείας: μαγείρεψε χωρίς λάδι (νερόβραστα/στον ατμό).</p>' : ''}</div>
+      <div data-cvp="vegan" hidden>${cvList(isVg ? [] : cv.vegan, 'Είναι ήδη vegan.')}<p class="small mut" style="margin:8px 0 0">Vegan: χωρίς κανένα ζωικό προϊόν (και μέλι). Συμπλήρωσε B12 αν τρως μόνιμα έτσι.</p></div></div>` : '';
     return `<div class="crumbs"><a href="#/">Αρχική</a> › <a href="#/g/${g.id}">${g.name}</a> › <a href="#/c/${x.cat}">${c.name}</a> › <a href="#/c/${x.cat}/${x.sub}">${esc(c.subs[x.sub] || '')}</a></div>
     <div class="rhead"><span class="big">${x.emoji}</span><div style="flex:1;min-width:0"><h1>${esc(x.name)}</h1><p>${esc(x.d || '')}</p><div class="meta">${chips}</div>
       <div class="row noprint" style="margin-top:12px">${x.p && x.p.length > 1 && x.i ? '<button class="btn sm" id="cookBtn">👨‍🍳 Μαγείρεψέ το βήμα-βήμα</button>' : ''}<button class="btn sm ${isFav ? '' : 'ghost'}" id="fav">${isFav ? '❤️ Στα αγαπημένα' : '🤍 Αγαπημένο'}</button>${x.i && x.i.length ? '<button class="btn sm ghost" id="toPlan">📅 Στο πρόγραμμα</button>' : ''}<button class="btn sm ghost" id="share">📤 Κοινοποίηση</button><button class="btn sm ghost" id="print">🖨️ Εκτύπωση</button><button class="btn sm ghost" id="copy">📋 Αντιγραφή</button>${(dk.i.length || dk.p.length) ? '<button class="btn sm ghost" id="reset">↺ Μηδενισμός</button>' : ''}</div></div></div>
+    ${bad.length ? `<div class="alwarn">⚠️ <div><b>Προσοχή – περιέχει ό,τι έχεις δηλώσει ότι σε πειράζει:</b><br>${bad.map(a => H.ABY[a].e + ' ' + esc(H.ABY[a].n)).join(' · ')}${cv && cv.vegan.length ? '<br><span class="small">Δες παρακάτω τη «🔁 Μετατροπή» για εναλλακτικά υλικά.</span>' : ''}</div></div>` : ''}
     <div class="box noprint" style="margin-top:14px"><h3><span class="l">📷 Φωτογραφία</span></h3><div id="photoBox"></div></div>
     <div class="rgrid"><div>
       ${box('ℹ️ Στοιχεία', info)}
+      ${nuBox}
       ${x.use && x.use.length ? box('🍽️ Για τι κάνει', `<div class="meta">${x.use.map(u => `<a class="chip" href="#/s/${encodeURIComponent(u)}">${esc(u)}</a>`).join('')}</div>`, 'cyan') : ''}
       ${x.age ? box('⏳ Ωρίμανση / παλαίωση', `<p style="margin:0">${esc(x.age)}</p>`, 'gold') : ''}
       ${box('🔪 Κοπή & προετοιμασία', ul(x.cut), 'gold')}
       ${box('🫙 Μαρινάδα', ul(x.mar), 'gold')}
       ${ing}
+      ${cvBox}
+      ${alBox}
     </div><div>
       ${steps}
       ${box('🔥 Ψήσιμο & βαθμοί', ul(x.ck), 'gold')}
@@ -238,6 +267,7 @@
     const dk = S.done[id] = S.done[id] || { i: [], p: [] };
     S.recent = [id].concat((S.recent || []).filter(i => i !== id)).slice(0, 20); save();
     const cb = $('#cookBtn'); if (cb) cb.onclick = () => cookOpen(id);
+    app.querySelectorAll('[data-cv]').forEach(b => b.onclick = () => { app.querySelectorAll('[data-cv]').forEach(z => z.classList.toggle('on', z === b)); app.querySelectorAll('[data-cvp]').forEach(d => d.hidden = d.dataset.cvp !== b.dataset.cv); });
     const tp = $('#toPlan'); if (tp) tp.onclick = () => planPicker(id);
     const sh = $('#share'); if (sh) sh.onclick = () => { const url = location.href.split('#')[0] + '#/r/' + id, data = { title: x.name + ' · ΓΕΥΣΕΙΣ 360°', text: x.d || x.name, url };
       if (navigator.share) navigator.share(data).catch(() => {}); else (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => toast('🔗 Ο σύνδεσμος αντιγράφηκε'), () => toast(url)); };
@@ -310,6 +340,27 @@
         <p class="mut small" style="margin:0">${esc(h.d)}</p>
         ${sec('🍽️ Φαγητά', h.f)}${sec('🍰 Γλυκά', h.s)}${sec('🥂 Ποτά & ροφήματα', h.dr)}
         ${h.c && h.c.length ? `<div style="margin-top:10px"><b class="small" style="color:var(--gold)">📜 Έθιμα</b><ul class="plain small">${h.c.map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>` : ''}</div>`).join('')}</div>`;
+  }
+
+  /* ---------- ⚠️ οι αλλεργίες μου ---------- */
+  function allergies() {
+    const cnt = {}; DB.forEach(x => H.allergensOf(x).forEach(a => cnt[a] = (cnt[a] || 0) + 1));
+    const blocked = S.allergies.length ? DB.filter(x => myAl(x).length).length : 0;
+    return `<div class="crumbs"><a href="#/">Αρχική</a> › Οι αλλεργίες μου</div>
+      <h1>⚠️ Οι αλλεργίες & δυσανεξίες μου</h1>
+      <p class="mut">Τσέκαρε ό,τι δεν τρως (για λόγους υγείας, δυσανεξίας ή επιλογής). Η εφαρμογή ψάχνει αυτόματα στα υλικά κάθε συνταγής και σε προειδοποιεί. Οι επιλογές μένουν <b>μόνο σε αυτή τη συσκευή</b>.</p>
+      <div class="box acc"><div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><b id="alSum">${S.allergies.length ? `${S.allergies.length} επιλογές · ${blocked} συνταγές τις περιέχουν` : 'Δεν έχεις επιλέξει τίποτα ακόμα'}</b></div>
+        <label class="swl"><input type="checkbox" id="alHide" ${S.alHide ? 'checked' : ''}> Κρύψε παντού ό,τι τις περιέχει</label>
+        <button class="btn sm ghost" id="alClr">✕ Καθάρισμα</button></div></div>
+      ${Object.entries(H.GRP).map(([g, t]) => `<div class="sect"><h2>${t}</h2></div><div class="algrid">${H.ALG.filter(a => a.g === g).map(a => `<label class="alopt ${S.allergies.includes(a.id) ? 'on' : ''}"><input type="checkbox" data-alg="${a.id}" ${S.allergies.includes(a.id) ? 'checked' : ''}><span class="e">${a.e}</span><span class="t">${esc(a.n)}<small>${cnt[a.alias || a.id] || 0} συνταγές</small></span></label>`).join('')}</div>`).join('')}
+      <p class="small mut" style="margin-top:16px">⚕️ Ο εντοπισμός γίνεται με λέξεις-κλειδιά στα υλικά και είναι βοηθητικός. Σε σοβαρή αλλεργία (αναφυλαξία) διάβαζε πάντα τις ετικέτες, ρώτα στο εστιατόριο για διασταυρούμενη επιμόλυνση και ακολούθησε τις οδηγίες του γιατρού σου.</p>`;
+  }
+  function wireAllergies() {
+    app.querySelectorAll('[data-alg]').forEach(c => c.onchange = () => { const id = c.dataset.alg; S.allergies = S.allergies.filter(z => z !== id); if (c.checked) S.allergies.push(id); save(); c.closest('.alopt').classList.toggle('on', c.checked);
+      const n = S.allergies.length ? DB.filter(x => myAl(x).length).length : 0; $('#alSum').textContent = S.allergies.length ? `${S.allergies.length} επιλογές · ${n} συνταγές τις περιέχουν` : 'Δεν έχεις επιλέξει τίποτα ακόμα'; });
+    $('#alHide').onchange = e => { S.alHide = e.target.checked; save(); toast(S.alHide ? '🛡️ Θα κρύβονται οι συνταγές με τις αλλεργίες σου' : 'Εμφανίζονται όλες (με ⚠️ σήμανση)'); };
+    $('#alClr').onclick = () => { S.allergies = []; save(); render(true); };
   }
 
   function favs() {
@@ -479,6 +530,7 @@
       case 'list': html = list(); nav = ''; break;
       case 'fridge': html = fridge(); nav = ''; break;
       case 'plan': html = plan(); nav = ''; break;
+      case 'allergies': html = allergies(); nav = ''; break;
       case 's': html = search(p.slice(1).join('/')); nav = ''; break;
       default: html = notFound();
     }
@@ -486,8 +538,9 @@
     document.querySelectorAll('#bnav a').forEach(a => a.classList.toggle('on', a.dataset.k === nav));
     if (p[0] === 'r') wireRecipe(p[1]);
     if (p[0] === 'plan') wirePlan();
+    if (p[0] === 'allergies') wireAllergies();
     if (p[0] === 'c') { const on = new Set(); const apply = () => { let n = 0; app.querySelectorAll('#cgrid .card').forEach(c => { const m = +c.dataset.min, l = +c.dataset.l, tg = c.dataset.tg || '', id = c.getAttribute('href').slice(4);
-        const ok = (!on.has('fast') || (m > 0 && m <= 30)) && (!on.has('easy') || l === 1) && (!on.has('nist') || /νηστίσιμο|vegan/.test(tg)) && (!on.has('fav') || S.fav.includes(id)); c.style.display = ok ? '' : 'none'; if (ok) n++; });
+        const ok = (!on.has('fast') || (m > 0 && m <= 30)) && (!on.has('easy') || l === 1) && (!on.has('nist') || /νηστίσιμο|vegan/.test(tg)) && (!on.has('fav') || S.fav.includes(id)) && (!on.has('safe') || c.dataset.al === '0') && (!on.has('light') || (+c.dataset.kc > 0 && +c.dataset.kc <= 450)); c.style.display = ok ? '' : 'none'; if (ok) n++; });
         $('#qfN').textContent = on.size ? `${n} αποτελέσματα` : ''; };
       app.querySelectorAll('[data-qf]').forEach(b => b.onclick = () => { const k = b.dataset.qf; on.has(k) ? on.delete(k) : on.add(k); b.classList.toggle('on'); apply(); }); }
     if (!p[0]) { const ib = $('#install'); if (ib) ib.onclick = () => { deferredInstall.prompt(); deferredInstall.userChoice.finally(() => { deferredInstall = null; render(true); }); }; }
